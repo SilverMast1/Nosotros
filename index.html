@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<!-- Librería para sincronización en tiempo real gratuita (MQTT) -->
-<script src="https://unpkg.com/mqtt@5.3.5/dist/mqtt.min.js"></script>
+<!-- SDK de Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
 <style>
   :root {
@@ -860,10 +861,23 @@ class LoveAudioEngine {
 }
 const audio = new LoveAudioEngine();
 
-// ===== CONFIGURACIÓN DE RED (MQTT) =====
-const BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
-let client = null;
-let roomTopic = null;
+// ===== CONFIGURACIÓN DE RED (FIREBASE) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBIl1halZT4UFTfkV0G4UvAZNPwHTj0uow",
+  authDomain: "nosotros-gabriel-alexa.firebaseapp.com",
+  databaseURL: "https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com",
+  projectId: "nosotros-gabriel-alexa",
+  storageBucket: "nosotros-gabriel-alexa.firebasestorage.app",
+  messagingSenderId: "539988368666",
+  appId: "1:539988368666:web:e65a5d800d295d4ff7e0a3",
+  measurementId: "G-B6B5N2KK0V"
+};
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let roomRef = null;
+let actionsRef = null;
 
 // ===== DATOS Y CONSTANTES =====
 const SESSION_KEY = 'nosotros_app_session_ga';
@@ -1093,72 +1107,62 @@ function triggerEmojiExplosion(emoji) {
   }
 }
 
-// ===== CONEXIÓN MQTT Y AUTENTICACIÓN =====
+// ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
 function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
   statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
   document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
 
-  client = mqtt.connect(BROKER_URL);
-  roomTopic = 'nosotros_app_ga/' + state.roomKey;
+  roomRef = db.ref('rooms/' + state.roomKey);
+  actionsRef = db.ref('rooms/' + state.roomKey + '/actions');
 
-  client.on('connect', () => {
+  // 1. Escuchar cambios de estado en tiempo real
+  roomRef.on('value', (snapshot) => {
     statusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
     document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> En tiempo real';
-    client.subscribe(roomTopic, (err) => {
-      if (!err) {
-        client.publish(roomTopic, JSON.stringify({ type: 'SYNC_REQ', sender: state.user.name }));
-      }
-    });
-  });
 
-  client.on('message', (topic, message) => {
-    try {
-      const msg = JSON.parse(message.toString());
-      if (msg.type === 'SYNC_REQ') {
-        if (state.room && msg.sender !== state.user.name) {
-          client.publish(roomTopic, JSON.stringify({ type: 'STATE', state: state.room }));
-        }
-      } else if (msg.type === 'STATE') {
-        const remoteState = msg.state;
-        if (!state.room || (remoteState.lastUpdated || 0) > (state.room.lastUpdated || 0)) {
-          // Detectar si la ruleta se activó remotamente
-          const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
-          const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
-          
-          state.room = remoteState;
-          state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
-          state.partner = state.user.role === 'user1' ? state.room.user2 : state.room.user1;
-          state.currentQuizIdx = state.room.quizIdx || 0;
-          saveLocal();
-          
-          if (newRuletaTs > oldRuletaTs) {
-            triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
-          } else {
-            renderAll();
-          }
-        }
-      } else if (msg.type === 'ACTION') {
-        if (msg.sender !== state.user.name) {
-          const actionMap = {
-            'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
-            'hug': { emoji: '🫂', text: 'te mandó un abrazo de oso' },
-            'heart': { emoji: '💖', text: 'te mandó un te amo' },
-            'miss': { emoji: '🥺', text: 'te extraña mucho' }
-          };
-          const act = actionMap[msg.action] || { emoji: '❤️', text: 'te mandó amor' };
-          if (msg.action === 'kiss') audio.playKiss();
-          else audio.playPoke();
-          triggerEmojiExplosion(act.emoji);
-          showToast(`¡${msg.sender} ${act.text}! ${act.emoji}`, 5000);
+    const remoteState = snapshot.val();
+    if (remoteState) {
+      if (!state.room || (remoteState.lastUpdated || 0) > (state.room.lastUpdated || 0)) {
+        const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
+        const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
+        
+        state.room = remoteState;
+        state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
+        state.partner = state.user.role === 'user1' ? state.room.user2 : state.room.user1;
+        state.currentQuizIdx = state.room.quizIdx || 0;
+        saveLocal();
+        
+        if (newRuletaTs > oldRuletaTs) {
+          triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
+        } else {
+          renderAll();
         }
       }
-    } catch (e) { console.error("Error MQTT message", e); }
+    }
+  }, (error) => {
+    statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Error de red';
+    console.error("Firebase read error", error);
   });
 
-  client.on('close', () => {
-    statusEl.className = "w-1.5 h-1.5 rounded-full bg-gray-400";
-    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Desconectado';
+  // 2. Escuchar pokes de amor en tiempo real
+  actionsRef.limitToLast(1).on('child_added', (snapshot) => {
+    const act = snapshot.val();
+    // Solo disparar si la acción es nueva y no es del usuario actual
+    if (act && act.sender !== state.user.name && (Date.now() - act.timestamp < 10000)) {
+      const actionMap = {
+        'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
+        'hug': { emoji: '🫂', text: 'te mandó un abrazo de oso' },
+        'heart': { emoji: '💖', text: 'te mandó un te amo' },
+        'miss': { emoji: '🥺', text: 'te extraña mucho' }
+      };
+      const actDetail = actionMap[act.action] || { emoji: '❤️', text: 'te mandó amor' };
+      if (act.action === 'kiss') audio.playKiss();
+      else audio.playPoke();
+      triggerEmojiExplosion(actDetail.emoji);
+      showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
+    }
   });
 }
 
@@ -1167,15 +1171,19 @@ function updateState(updaterFunction) {
   updaterFunction(state.room);
   state.room.lastUpdated = Date.now();
   saveLocal();
-  if (client && client.connected) {
-    client.publish(roomTopic, JSON.stringify({ type: 'STATE', state: state.room }), { qos: 1, retain: true });
+  if (roomRef) {
+    roomRef.set(state.room).catch(e => console.error("Firebase write error", e));
   }
   renderAll();
 }
 
 function sendLoveAction(actionType) {
-  if (client && client.connected) {
-    client.publish(roomTopic, JSON.stringify({ type: 'ACTION', action: actionType, sender: state.user.name }));
+  if (actionsRef) {
+    actionsRef.push({
+      action: actionType,
+      sender: state.user.name,
+      timestamp: Date.now()
+    });
     const emojiMap = { 'kiss': '💋', 'hug': '🫂', 'heart': '💖', 'miss': '🥺' };
     showToast(`¡Le enviaste un amor! ${emojiMap[actionType] || ''}`);
     if (actionType === 'kiss') audio.playKiss();
