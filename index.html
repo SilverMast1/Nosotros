@@ -1129,22 +1129,32 @@ function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
   
   if (!db) {
-    statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
-    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Modo local (sin red)';
+    if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    const subtitleEl = document.getElementById('header-subtitle');
+    if (subtitleEl) {
+      subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Modo local (sin red)';
+    }
     console.warn("Firebase Database not available. Operating in local mode.");
     return;
   }
 
-  statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
-  document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
+  if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
+  const subtitleEl = document.getElementById('header-subtitle');
+  if (subtitleEl) {
+    subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
+  }
 
   roomRef = db.ref('rooms/' + state.roomKey);
   actionsRef = db.ref('rooms/' + state.roomKey + '/actions');
 
   // 1. Escuchar cambios de estado en tiempo real
   roomRef.on('value', (snapshot) => {
-    statusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
-    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> En tiempo real';
+    const liveStatusEl = document.getElementById('conn-status');
+    if (liveStatusEl) liveStatusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
+    const liveSubtitleEl = document.getElementById('header-subtitle');
+    if (liveSubtitleEl) {
+      liveSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-green-400"></span> En tiempo real';
+    }
 
     const remoteState = snapshot.val();
     if (remoteState) {
@@ -1166,8 +1176,12 @@ function connectMQTT() {
       }
     }
   }, (error) => {
-    statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
-    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Error de red';
+    const errStatusEl = document.getElementById('conn-status');
+    if (errStatusEl) errStatusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    const errSubtitleEl = document.getElementById('header-subtitle');
+    if (errSubtitleEl) {
+      errSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Error de red';
+    }
     console.error("Firebase read error", error);
   });
 
