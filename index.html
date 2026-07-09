@@ -1250,16 +1250,22 @@ function processAuthenticatedUser(name, key, room) {
   state.user = { name, role };
   state.roomKey = key;
   state.room = room;
-  state.me = role === 'user1' ? room.user1 : room.user2;
-  state.partner = role === 'user1' ? room.user2 : room.user1;
+
+  // Inicializaciones preventivas en el estado si la sala fue creada vieja o está incompleta en LocalStorage
+  if (!state.room.user1) state.room.user1 = { name: 'Gabriel', mood: null, moodNote: null, moodDate: null };
+  if (!state.room.user2) state.room.user2 = { name: 'Alexa', mood: null, moodNote: null, moodDate: null };
+  if (!state.room.coupons) state.room.coupons = [];
+  if (!state.room.customRetos) state.room.customRetos = [];
+  if (!state.room.answers) state.room.answers = {};
+  if (!state.room.quizVotes) state.room.quizVotes = {};
+  if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
+
+  state.me = role === 'user1' ? state.room.user1 : state.room.user2;
+  state.partner = role === 'user1' ? state.room.user2 : state.room.user1;
   state.currentQuizIdx = room.quizIdx || 0;
 
   if (role === 'user1') state.room.user1.name = name;
   else state.room.user2.name = name;
-  
-  // Inicializaciones preventivas en el estado si la sala fue creada vieja
-  if (!state.room.coupons) state.room.coupons = [];
-  if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
   
   saveLocal();
   saveSession({ name, role }, key);
@@ -1304,13 +1310,20 @@ function autoLogin() {
     state.user = session.user;
     state.roomKey = session.key;
     state.room = room;
+
+    // Inicializaciones preventivas en el estado si la sala fue creada vieja o está incompleta en LocalStorage
+    if (!state.room.user1) state.room.user1 = { name: 'Gabriel', mood: null, moodNote: null, moodDate: null };
+    if (!state.room.user2) state.room.user2 = { name: 'Alexa', mood: null, moodNote: null, moodDate: null };
+    if (!state.room.coupons) state.room.coupons = [];
+    if (!state.room.customRetos) state.room.customRetos = [];
+    if (!state.room.answers) state.room.answers = {};
+    if (!state.room.quizVotes) state.room.quizVotes = {};
+    if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
+
     state.me = session.user.role === 'user1' ? state.room.user1 : state.room.user2;
     state.partner = session.user.role === 'user1' ? state.room.user2 : state.room.user1;
     state.currentQuizIdx = state.room.quizIdx || 0;
 
-    if (!state.room.coupons) state.room.coupons = [];
-    if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
-    
     document.getElementById('user-pill').textContent = session.user.name;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('app-screen').hidden = false;
