@@ -428,7 +428,7 @@
         <input id="login-key" type="password" class="input key-mono" placeholder="••••••••" maxlength="14" autocomplete="off">
         <p class="text-xs mt-2" style="color: var(--muted)">Introduce la contraseña compartida para sincronizaros.</p>
       </div>
-      <button id="login-btn" class="btn-primary w-full shadow-lg">Entrar a nuestro espacio</button>
+      <button id="login-btn" onclick="handleLogin(document.getElementById('login-name').value, document.getElementById('login-key').value)" class="btn-primary w-full shadow-lg">Entrar a nuestro espacio</button>
     </div>
   </div>
 </section>
