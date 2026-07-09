@@ -1248,7 +1248,7 @@ function initApp() {
   if (!state.room.customRetos) state.room.customRetos = [];
   if (!state.room.answers) state.room.answers = {};
   if (!state.room.quizVotes) state.room.quizVotes = {};
-  if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
+  if (!state.room.ticTacToe || !state.room.ticTacToe.board) initSharedTicTacToeState(state.room);
 
   state.me = session.user.role === 'user1' ? state.room.user1 : state.room.user2;
   state.partner = session.user.role === 'user1' ? state.room.user2 : state.room.user1;
@@ -1683,7 +1683,7 @@ function resetTicTacToe() {
 
 function renderSharedTicTacToe() {
   const ttt = state.room.ticTacToe;
-  if (!ttt) return;
+  if (!ttt || !ttt.board) return;
 
   // Actualizar turno
   const turnDisplay = document.getElementById('ttt-turn-display');
