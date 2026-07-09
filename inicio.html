@@ -224,7 +224,7 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
 
   /* 3 en Raya de Amor */
-  .ttt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; aspect-ratio: 1; max-width: 320px; margin: 0 auto; }
+  .ttt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; aspect-ratio: 1; width: 100%; max-width: 300px; margin: 0 auto; }
   .ttt-cell {
     aspect-ratio: 1;
     border-radius: 16px;
@@ -272,8 +272,8 @@
     top: 50%;
     left: 50%;
     transform-origin: 0% 50%;
-    padding-left: 50px;
-    font-size: 11px;
+    padding-left: 45px;
+    font-size: 10px;
     font-weight: 700;
     color: var(--fg);
     display: flex;
@@ -1601,11 +1601,11 @@ function renderRuletaStructure() {
   
   wheel.innerHTML = '';
   RULETA_OPTIONS.forEach((opt, i) => {
-    const angle = i * 45;
+    const angle = i * 45 + 22.5; // Centrado en la rebanada de 45 grados
     const el = document.createElement('div');
     el.className = 'roulette-label';
-    el.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    el.innerHTML = `<span style="transform: rotate(0deg); display: inline-block;">${opt.text}</span>`;
+    el.style.transform = `translateY(-50%) rotate(${angle}deg)`;
+    el.innerHTML = `<span style="display: inline-block;">${opt.text}</span>`;
     wheel.appendChild(el);
   });
 }
