@@ -1266,18 +1266,34 @@ function processAuthenticatedUser(name, key, room) {
   saveSession({ name, role }, key);
   
   let pubClient = mqtt.connect(BROKER_URL);
+  let resolved = false;
+
+  const proceed = () => {
+    if (resolved) return;
+    resolved = true;
+    pubClient.end();
+    document.getElementById('loading-screen').hidden = true;
+    document.getElementById('login-screen').hidden = true;
+    document.getElementById('app-screen').hidden = false;
+    document.getElementById('user-pill').textContent = name;
+    switchSection('dashboard');
+    connectMQTT();
+    renderAll();
+  };
+
   pubClient.on('connect', () => {
     pubClient.publish('nosotros_app_ga/' + key, JSON.stringify({ type: 'STATE', state: state.room }), { qos: 1, retain: true }, () => {
-      pubClient.end();
-      document.getElementById('loading-screen').hidden = true;
-      document.getElementById('login-screen').hidden = true;
-      document.getElementById('app-screen').hidden = false;
-      document.getElementById('user-pill').textContent = name;
-      switchSection('dashboard');
-      connectMQTT();
-      renderAll();
+      proceed();
     });
   });
+
+  // Si no se puede conectar en 2.5 segundos (ej: VPN activa o bloqueo de puertos), entramos en modo local
+  setTimeout(() => {
+    if (!resolved) {
+      showToast('Entrando en modo local (sin sincronización)...');
+      proceed();
+    }
+  }, 2500);
 }
 
 function autoLogin() {
