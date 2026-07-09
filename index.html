@@ -396,7 +396,7 @@
 <div id="hearts-container"></div>
 
 <!-- PANTALLA DE CARGA / CONEXIÓN -->
-<section id="loading-screen" class="relative z-50 min-h-screen flex flex-col items-center justify-center px-6 py-12" hidden>
+<section id="loading-screen" class="relative z-50 min-h-screen flex flex-col items-center justify-center px-6 py-12" style="display: none;">
   <div class="text-center">
     <div class="inline-flex items-center justify-center w-20 h-20 mb-8 rounded-3xl glass shadow-lg">
       <i data-lucide="heart" class="w-10 h-10 pulse-heart" style="color: var(--accent)"></i>
@@ -873,11 +873,20 @@ const firebaseConfig = {
   measurementId: "G-B6B5N2KK0V"
 };
 
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+let db = null;
 let roomRef = null;
 let actionsRef = null;
+
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } else {
+    console.warn("Firebase SDK could not be loaded. Operating in offline/local mode.");
+  }
+} catch (e) {
+  console.error("Error initializing Firebase:", e);
+}
 
 // ===== DATOS Y CONSTANTES =====
 const SESSION_KEY = 'nosotros_app_session_ga';
@@ -1110,6 +1119,14 @@ function triggerEmojiExplosion(emoji) {
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
 function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
+  
+  if (!db) {
+    statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Modo local (sin red)';
+    console.warn("Firebase Database not available. Operating in local mode.");
+    return;
+  }
+
   statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
   document.getElementById('header-subtitle').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
 
@@ -1248,7 +1265,7 @@ function processAuthenticatedUser(name, key, room) {
   saveSession({ name, role }, key);
   
   // Mostrar dashboard e ingresar instantáneamente
-  document.getElementById('loading-screen').hidden = true;
+  document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('login-screen').hidden = true;
   document.getElementById('app-screen').hidden = false;
   document.getElementById('user-pill').textContent = name;
@@ -1264,7 +1281,7 @@ function autoLogin() {
       clearSession(); return;
     }
     const loadingScreen = document.getElementById('loading-screen');
-    loadingScreen.hidden = false;
+    loadingScreen.style.display = 'flex';
     
     let room = getLocal(session.key) || {
       key: session.key,
@@ -1297,7 +1314,7 @@ function autoLogin() {
     document.getElementById('user-pill').textContent = session.user.name;
     document.getElementById('login-screen').hidden = true;
     document.getElementById('app-screen').hidden = false;
-    loadingScreen.hidden = true;
+    loadingScreen.style.display = 'none';
     
     switchSection('dashboard');
     connectMQTT();
@@ -1306,7 +1323,8 @@ function autoLogin() {
 }
 
 function logout() {
-  if (client) client.end();
+  if (roomRef) roomRef.off();
+  if (actionsRef) actionsRef.off();
   clearSession();
   state.user = null; state.roomKey = null; state.room = null;
   document.getElementById('app-screen').hidden = true;
