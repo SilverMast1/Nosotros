@@ -425,6 +425,9 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button id="notif-toggle-btn" class="glass w-9 h-9 rounded-xl flex items-center justify-center" title="Activar notificaciones">
+          <i data-lucide="bell" class="w-4 h-4 text-amber-400" id="notif-icon"></i>
+        </button>
         <button id="sound-toggle-btn" class="glass w-9 h-9 rounded-xl flex items-center justify-center" title="Activar/Desactivar sonido">
           <i data-lucide="volume-2" class="w-4 h-4 text-pink-400" id="sound-icon"></i>
         </button>
@@ -1099,6 +1102,36 @@ function triggerEmojiExplosion(emoji) {
   }
 }
 
+// ===== NOTIFICACIONES LOCALES =====
+function updateNotifIcon() {
+  const icon = document.getElementById('notif-icon');
+  if (!icon) return;
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    icon.setAttribute('data-lucide', 'bell');
+    icon.className = "w-4 h-4 text-amber-400";
+  } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+    icon.setAttribute('data-lucide', 'bell-off');
+    icon.className = "w-4 h-4 text-purple-200/50";
+  } else {
+    icon.setAttribute('data-lucide', 'bell');
+    icon.className = "w-4 h-4 text-purple-200/50 animate-pulse";
+  }
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function sendLocalNotification(title, body) {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: body,
+        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico'
+      });
+    } catch (e) {
+      console.error("Error al disparar notificación:", e);
+    }
+  }
+}
+
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
 function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
@@ -1137,6 +1170,44 @@ function connectMQTT() {
         const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
         const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
         
+        // Analizar diferencias antes de sobreescribir el estado local
+        if (state.room) {
+          const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
+          const oldPartnerObj = state.room[partnerRole];
+          const newPartnerObj = remoteState[partnerRole];
+          
+          if (oldPartnerObj && newPartnerObj) {
+            // A. Nota de ánimo cambiada
+            if (newPartnerObj.moodNote !== oldPartnerObj.moodNote && newPartnerObj.moodNote) {
+              sendLocalNotification(`Mensaje de ánimo de ${newPartnerObj.name} 💕`, `Escribió: "${newPartnerObj.moodNote}"`);
+            } else if (newPartnerObj.mood !== oldPartnerObj.mood && newPartnerObj.mood) {
+              const moodEmoji = { happy: '😊', loving: '💖', sad: '😢', tired: '🥱', angry: '😡' }[newPartnerObj.mood] || '✨';
+              sendLocalNotification(`Estado de ${newPartnerObj.name} 💕`, `Se siente: ${moodEmoji}`);
+            }
+          }
+          
+          // B. Preguntas contestadas
+          const oldAnswers = state.room.answers || {};
+          const newAnswers = remoteState.answers || {};
+          if (Object.keys(newAnswers).length > Object.keys(oldAnswers).length) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Preguntas de amor 💬', `¡${partnerName} ha respondido una pregunta!`);
+          }
+          
+          // C. Invitación a jugar (Cambio de turno en 3 en Raya)
+          const oldTTT = state.room.ticTacToe;
+          const newTTT = remoteState.ticTacToe;
+          if (newTTT && oldTTT && newTTT.turn === state.user.role && oldTTT.turn !== state.user.role && !newTTT.winner) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Tres en Raya 🎮', `¡Es tu turno para jugar con ${partnerName}!`);
+          }
+        }
+
+        // D. Giro de ruleta por la pareja
+        if (newRuletaTs > oldRuletaTs && remoteState.currentRuleta.spinner !== state.user.name) {
+          sendLocalNotification('La Ruleta del Amor 🎡', `¡${remoteState.currentRuleta.spinner} está girando la ruleta!`);
+        }
+
         state.room = remoteState;
         state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
         state.partner = state.user.role === 'user1' ? state.room.user2 : state.room.user1;
@@ -1176,6 +1247,9 @@ function connectMQTT() {
       else audio.playPoke();
       triggerEmojiExplosion(actDetail.emoji);
       showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
+      
+      // Enviar notificación local del poke
+      sendLocalNotification(`¡Amor de ${act.sender}! ${actDetail.emoji}`, `${act.sender} ${actDetail.text}`);
     }
   });
 }
@@ -1976,6 +2050,33 @@ document.addEventListener('DOMContentLoaded', () => {
   
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('copy-key-btn').addEventListener('click', copyKey);
+
+  // Notificaciones
+  const notifBtn = document.getElementById('notif-toggle-btn');
+  if (notifBtn) {
+    notifBtn.addEventListener('click', () => {
+      if (typeof Notification === 'undefined') {
+        showToast('Este navegador no soporta notificaciones de escritorio');
+        return;
+      }
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          updateNotifIcon();
+          if (permission === 'granted') {
+            showToast('¡Notificaciones activadas! 🔔');
+            sendLocalNotification('¡Hola!', 'Las notificaciones están activadas para vuestro espacio ❤️');
+          } else {
+            showToast('Notificaciones rechazadas 🔕');
+          }
+        });
+      } else if (Notification.permission === 'granted') {
+        showToast('Las notificaciones ya están activadas 🔔');
+      } else {
+        showToast('Permiso bloqueado. Actívalo en los ajustes de tu navegador ⚙️');
+      }
+    });
+  }
+  updateNotifIcon();
 
   // Navegación
   document.querySelectorAll('.tab').forEach(t => {
