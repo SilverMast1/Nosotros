@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nosotros · Gabriel & Alexa</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<!-- SDK de Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<style>
+  :root {
+    --bg: #0f0514;
+    --bg-2: #1c0a24;
+    --fg: #fbebfd;
+    --muted: #a68ba7;
+    --accent: #ff4a76;
+    --accent-2: #ffb547;
+    --accent-3: #c25f9b;
+    --card: rgba(255, 255, 255, 0.035);
+    --card-hover: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Manrope', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
+
+  /* Efectos de fondo */
+  .bg-effects { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.4; animation: float 25s ease-in-out infinite; }
+  .blob-1 { width: 550px; height: 550px; background: radial-gradient(circle, var(--accent) 0%, transparent 75%); top: -100px; left: -100px; }
+  .blob-2 { width: 650px; height: 650px; background: radial-gradient(circle, var(--accent-2) 0%, transparent 75%); bottom: -150px; right: -150px; animation-delay: -8s; }
+  .blob-3 { width: 450px; height: 450px; background: radial-gradient(circle, var(--accent-3) 0%, transparent 75%); top: 35%; left: 35%; animation-delay: -14s; }
+  @keyframes float {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(70px, -60px) scale(1.12); }
+    66% { transform: translate(-50px, 50px) scale(0.9); }
+  }
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /></filter><rect width='100%25' height='100%25' filter='url(%23n)' /></svg>");
+  }
+
+  /* Corazones de fondo */
+  .heart-bg { position: fixed; color: var(--accent); opacity: 0; pointer-events: none; z-index: 2; animation: floatUp 8s linear forwards; }
+  @keyframes floatUp {
+    0% { transform: translateY(100vh) scale(0.4) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.25; }
+    90% { opacity: 0.25; }
+    100% { transform: translateY(-120px) scale(1.3) rotate(360deg); opacity: 0; }
+  }
+
+  /* Explosión de emojis */
+  .emoji-pop {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    font-size: 2.5rem;
+    animation: popEmoji 2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  }
+  @keyframes popEmoji {
+    0% { transform: translate(-50%, -50%) scale(0.5) rotate(0deg); opacity: 0; }
+    15% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.3) rotate(var(--rot)); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(var(--tx), calc(var(--ty) + 120px)) scale(0.7) rotate(calc(var(--rot) * 1.5)); }
+  }
+
+  /* Glassmorphism */
+  .glass {
+    background: var(--card);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    transition: background 0.3s, border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  }
+  .glass:hover {
+    background: var(--card-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Inputs y botones */
+  .input {
+    background: rgba(10, 3, 14, 0.6);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 15px;
+    width: 100%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(255, 74, 118, 0.18);
+    background: rgba(10, 3, 14, 0.8);
+  }
+  .input::placeholder { color: rgba(166, 139, 167, 0.5); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, #ff7354 100%);
+    color: #0f0514;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(255, 74, 118, 0.15);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 74, 118, 0.35);
+  }
+  
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 10px 20px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-ghost:hover {
+    background: var(--card);
+    border-color: var(--accent);
+  }
+
+  /* Pestañas */
+  .tab {
+    padding: 10px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    white-space: nowrap;
+    font-size: 13px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab:hover { color: var(--fg); background: rgba(255,255,255,0.02); }
+  .tab.active {
+    background: var(--card);
+    color: var(--fg);
+    border-color: var(--border);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+  }
+
+  /* Emojis flotantes */
+  .mood-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    font-size: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mood-btn:hover { transform: scale(1.12) translateY(-2px); border-color: var(--accent); }
+  .mood-btn.selected {
+    background: linear-gradient(135deg, rgba(255, 74, 118, 0.25), rgba(255, 181, 71, 0.15));
+    border-color: var(--accent);
+    transform: scale(1.12);
+  }
+
+  /* Tablas y listas con scroll interno */
+  .inner-scroll { overflow-y: auto; padding-right: 4px; }
+  .inner-scroll::-webkit-scrollbar { width: 6px; }
+  .inner-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Diseños de sección a pantalla completa (no scroll) */
+  .section { display: none; height: 100%; width: 100%; overflow: hidden; }
+  .section.active { display: flex; flex-direction: column; animation: fadeIn 0.4s ease forwards; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: #18091f;
+    border: 1px solid var(--accent);
+    color: var(--fg);
+    padding: 12px 24px;
+    border-radius: 14px;
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(25px);
+    max-width: 90vw;
+    text-align: center;
+    font-size: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(255, 74, 118, 0.15);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* 3 en Raya de Amor */
+  .ttt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; aspect-ratio: 1; max-width: 320px; margin: 0 auto; }
+  .ttt-cell {
+    aspect-ratio: 1;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #18091f 0%, #291233 100%);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .ttt-cell:hover { border-color: var(--accent); transform: scale(1.03); background: rgba(255, 74, 118, 0.05); }
+  .ttt-cell.taken { pointer-events: none; }
+  .ttt-cell.winning { background: rgba(255, 74, 118, 0.2); border-color: var(--accent); box-shadow: 0 0 15px rgba(255, 74, 118, 0.3); }
+
+  /* Ruleta Giratoria */
+  .roulette-container { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+  .roulette-wheel {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 8px solid var(--bg-2);
+    position: relative;
+    overflow: hidden;
+    transition: transform 4s cubic-bezier(0.15, 0.85, 0.35, 1);
+    box-shadow: 0 0 30px rgba(194, 95, 155, 0.2), inset 0 0 30px rgba(0,0,0,0.8);
+    background: conic-gradient(
+      #ff4a76 0deg 45deg,
+      #903774 45deg 90deg,
+      #ffb547 90deg 135deg,
+      #702c63 135deg 180deg,
+      #c25f9b 180deg 225deg,
+      #44123b 225deg 270deg,
+      #ff7354 270deg 315deg,
+      #1f041b 315deg 360deg
+    );
+  }
+  .roulette-label {
+    position: absolute;
+    width: 50%;
+    height: 40px;
+    top: 50%;
+    left: 50%;
+    transform-origin: 0% 50%;
+    padding-left: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fg);
+    display: flex;
+    align-items: center;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    pointer-events: none;
+  }
+  .roulette-pointer {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 25px solid var(--accent);
+    z-index: 10;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+  }
+  .roulette-center {
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background: #18091f;
+    border: 4px solid var(--border);
+    z-index: 5;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+  }
+
+  /* Vales de Amor Gilded */
+  .ticket-card {
+    background: linear-gradient(135deg, #240d2f 0%, #17071e 100%);
+    border: 1px solid rgba(255, 181, 71, 0.25);
+    position: relative;
+    border-radius: 16px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  }
+  .ticket-card::before, .ticket-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg);
+    transform: translateY(-50%);
+    z-index: 10;
+    border: 1px solid var(--border);
+  }
+  .ticket-card::before { left: -7px; border-left: none; }
+  .ticket-card::after { right: -7px; border-right: none; }
+
+  /* Juego de memoria */
+  .memory-card { aspect-ratio: 1; perspective: 1000px; cursor: pointer; }
+  .memory-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+  .memory-card.flipped .memory-inner { transform: rotateY(180deg); }
+  .memory-card.matched .memory-inner { transform: rotateY(180deg); }
+  .memory-card.matched { pointer-events: none; }
+  .memory-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    font-size: 2rem;
+  }
+  .memory-front {
+    background: linear-gradient(135deg, #18091f 0%, #291233 100%);
+    border: 1px solid var(--border);
+  }
+  .memory-back {
+    background: linear-gradient(135deg, rgba(255, 74, 118, 0.18) 0%, rgba(255, 181, 71, 0.18) 100%);
+    border: 1px solid var(--accent);
+    transform: rotateY(180deg);
+  }
+  .memory-card.matched .memory-back {
+    background: linear-gradient(135deg, rgba(255, 74, 118, 0.08) 0%, rgba(255, 181, 71, 0.08) 100%);
+    border-color: rgba(255, 74, 118, 0.3);
+    opacity: 0.55;
+  }
+
+  .love-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .love-action-btn:hover { transform: scale(1.06) translateY(-2px); }
+
+  .blur-text { filter: blur(8px); user-select: none; pointer-events: none; }
+  .blur-container { position: relative; overflow: hidden; }
+  .blur-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(28, 10, 36, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-effects"><div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div></div>
+<div class="grain"></div>
+<div id="hearts-container"></div>
+
+<!-- PANTALLA DE CARGA / CONEXIÓN -->
+<section id="loading-screen" class="relative z-50 min-h-screen flex flex-col items-center justify-center px-6 py-12" style="display: none;">
+  <div class="text-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 mb-8 rounded-3xl glass shadow-lg">
+      <i data-lucide="heart" class="w-10 h-10 pulse-heart" style="color: var(--accent)"></i>
+    </div>
+    <h2 class="font-display text-3xl font-light mb-3">Conectando vuestro espacio</h2>
+    <p class="text-sm max-w-xs mx-auto animate-pulse" style="color: var(--muted)">Abriendo el portal de Gabriel & Alexa...</p>
+  </div>
+</section>
+
+
+
+<!-- PANTALLA DE LA APLICACIÓN -->
+<section id="app-screen" class="relative z-10 h-screen flex flex-col" hidden>
+  <header class="px-6 py-3 border-b flex-shrink-0" style="border-color: var(--border); background: rgba(15, 5, 20, 0.4); backdrop-filter: blur(10px);">
+    <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl glass flex items-center justify-center"><i data-lucide="heart" class="w-4.5 h-4.5 pulse-heart" style="color: var(--accent)"></i></div>
+        <div>
+          <div class="font-display text-lg flex items-center gap-1.5 leading-none">
+            <span>Nosotros</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10" id="user-pill">—</span>
+          </div>
+          <div class="text-[10px] flex items-center gap-1 mt-0.5" style="color: var(--muted)" id="header-subtitle">
+            <span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Conectando...
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="sound-toggle-btn" class="glass w-9 h-9 rounded-xl flex items-center justify-center" title="Activar/Desactivar sonido">
+          <i data-lucide="volume-2" class="w-4 h-4 text-pink-400" id="sound-icon"></i>
+        </button>
+        <button id="copy-key-btn" class="glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5">
+          <i data-lucide="key" class="w-3 h-3 text-amber-400"></i>
+          <span class="key-mono" id="header-key">—</span>
+          <i data-lucide="copy" class="w-2.5 h-2.5 opacity-55"></i>
+        </button>
+        <button id="logout-btn" class="btn-ghost text-xs py-1.5 px-2.5 flex items-center justify-center" title="Cerrar sesión"><i data-lucide="log-out" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVEGACIÓN DESLIZABLE HORIZONTAL -->
+  <nav class="px-6 py-2 sticky top-0 z-20 flex-shrink-0" style="background: rgba(15, 5, 20, 0.85); backdrop-filter: blur(25px); border-bottom: 1px solid var(--border)">
+    <div class="max-w-6xl mx-auto flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <button class="tab active" data-section="dashboard"><i data-lucide="home" class="w-3.5 h-3.5"></i>Inicio</button>
+      <button class="tab" data-section="preguntas"><i data-lucide="message-circle-heart" class="w-3.5 h-3.5"></i>Preguntas</button>
+      <button class="tab" data-section="memoria"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>Memoria</button>
+      <button class="tab" data-section="verdadr"><i data-lucide="shuffle" class="w-3.5 h-3.5"></i>Verdad o Reto</button>
+      <button class="tab" data-section="quiz"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>¿Quién?</button>
+      <button class="tab" data-section="ruleta"><i data-lucide="compass" class="w-3.5 h-3.5 text-pink-300"></i>Ruleta</button>
+      <button class="tab" data-section="tresenraya"><i data-lucide="x" class="w-3.5 h-3.5 text-amber-300"></i>3 en Raya</button>
+      <button class="tab" data-section="vales"><i data-lucide="ticket" class="w-3.5 h-3.5 text-purple-300"></i>Vales</button>
+      <button class="tab" data-section="retos"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Retos</button>
+    </div>
+  </nav>
+
+  <!-- CONTENEDOR DE SECCIONES PRINCIPAL (CON ALTURA AJUSTADA Y SIN SCROLL VERTICAL GENERAL) -->
+  <main class="max-w-6xl mx-auto px-6 py-5 flex-1 w-full overflow-hidden relative">
+    
+    <!-- DASHBOARD (INICIO) CON DISEÑO COMPACTO Y ADAPTATIVO SIN SCROLL EN ESCRITORIO -->
+    <div id="section-dashboard" class="section active">
+      <div class="h-full flex flex-col md:grid md:grid-cols-3 gap-6 overflow-y-auto md:overflow-hidden pb-4">
+        <!-- COLUMNA 1: CONTADOR DE ANIVERSARIO -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[210px] md:h-full relative overflow-hidden">
+          <div>
+            <div class="text-[10px] uppercase tracking-widest mb-1.5" style="color: var(--muted)">Llevamos juntos</div>
+            <div class="flex items-baseline gap-2 flex-wrap">
+              <div class="font-display text-6xl md:text-7xl font-light leading-none" style="color: var(--accent)" id="days-count">0</div>
+              <div class="font-display text-xl" style="color: var(--muted)">días</div>
+            </div>
+          </div>
+          <div class="mt-4 border-t border-white/5 pt-4">
+            <div class="text-[10px] uppercase tracking-widest" style="color: var(--muted)">Desde el inicio</div>
+            <div class="text-sm font-semibold mt-0.5" id="start-date">—</div>
+            <div class="text-xs text-pink-300 mt-1" id="date-breakdown">—</div>
+            <button id="edit-date-btn" class="btn-ghost text-xs py-1.5 px-3 mt-3 flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3"></i>Cambiar fecha</button>
+          </div>
+          <div class="absolute -right-8 -top-8 opacity-[0.03] text-[180px] font-display leading-none select-none pointer-events-none">♥</div>
+        </div>
+
+        <!-- COLUMNA 2: MOOD TRACKER COMPACTO -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[280px] md:h-full">
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <div class="text-[10px] uppercase tracking-widest" style="color: var(--muted)">¿Cómo estás hoy?</div>
+              <div class="text-[10px] font-semibold" style="color: var(--muted)" id="mood-date">—</div>
+            </div>
+            <div class="font-display text-lg mb-3" id="mood-greeting">Tu mood</div>
+            <div class="flex gap-2 flex-wrap mb-4">
+              <button class="mood-btn" data-mood="😍">😍</button>
+              <button class="mood-btn" data-mood="😊">😊</button>
+              <button class="mood-btn" data-mood="😌">😌</button>
+              <button class="mood-btn" data-mood="🥱">🥱</button>
+              <button class="mood-btn" data-mood="😔">😔</button>
+              <button class="mood-btn" data-mood="😡">😡</button>
+            </div>
+            <div class="flex gap-2 mb-3">
+              <input id="mood-note-input" type="text" class="input py-2 text-xs" placeholder="Nota rápida..." maxlength="60">
+              <button id="save-mood-note-btn" class="btn-primary py-2 px-3 text-xs">OK</button>
+            </div>
+          </div>
+          <div class="border-t pt-4" style="border-color: var(--border)">
+            <div class="text-[10px] uppercase tracking-widest mb-2 font-semibold" style="color: var(--muted)">Mood de tu pareja</div>
+            <div id="partner-mood" class="flex items-center gap-2.5 text-xs" style="color: var(--muted)">
+              Cargando mood...
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMNA 3: ACCIONES RÁPIDAS DE AMOR Y MENSAJE DE COMPAÑÍA -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[280px] md:h-full">
+          <div>
+            <div class="text-[10px] uppercase tracking-widest mb-1" style="color: var(--muted)">Mandar amor</div>
+            <div class="text-base font-display mb-3">Hazle saber que estás ahí</div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="love-action-btn glass bg-pink-500/5" onclick="sendLoveAction('kiss')">
+                <span class="text-2xl">💋</span>
+                <span class="text-[10px] font-semibold">Un beso</span>
+              </div>
+              <div class="love-action-btn glass bg-amber-500/5" onclick="sendLoveAction('hug')">
+                <span class="text-2xl">🫂</span>
+                <span class="text-[10px] font-semibold">Abrazo</span>
+              </div>
+              <div class="love-action-btn glass bg-purple-500/5" onclick="sendLoveAction('heart')">
+                <span class="text-2xl">💖</span>
+                <span class="text-[10px] font-semibold">Te amo</span>
+              </div>
+              <div class="love-action-btn glass" onclick="sendLoveAction('miss')">
+                <span class="text-2xl">🥺</span>
+                <span class="text-[10px] font-semibold">Te extraño</span>
+              </div>
+            </div>
+          </div>
+          <div class="glass rounded-2xl p-3 cursor-pointer hover:bg-white/5 flex items-center gap-2 mt-4" id="surprise-card">
+            <i data-lucide="sparkles" class="w-4 h-4 flex-shrink-0 text-amber-300"></i>
+            <div>
+              <div class="text-xs font-semibold">Mensaje sorpresa</div>
+              <div class="text-[10px]" style="color: var(--muted)">Toca para abrir</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREGUNTAS CON RESPUESTAS HISTÓRICAS CON SCROLL INTERNO -->
+    <div id="section-preguntas" class="section">
+      <div class="text-center mb-5 flex-shrink-0">
+        <div class="text-[10px] uppercase tracking-widest mb-1 font-semibold" style="color: var(--muted)">Pregunta del día</div>
+        <h2 class="font-display text-2xl md:text-3xl font-light leading-snug" id="daily-question">—</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto flex-1 overflow-hidden">
+        <div class="glass rounded-2xl p-5 flex flex-col justify-between h-[230px] md:h-full">
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style="background: var(--accent); color: var(--bg)" id="my-avatar">?</div>
+              <div class="font-display text-base" id="my-name-label">Tú</div>
+            </div>
+            <textarea id="my-answer" class="input resize-none h-[110px] md:h-[130px] text-xs" placeholder="Escribe tu respuesta con cariño..."></textarea>
+          </div>
+          <button id="save-answer-btn" class="btn-primary mt-2 w-full text-xs">Guardar mi respuesta</button>
+        </div>
+        
+        <div class="glass rounded-2xl p-5 relative h-[230px] md:h-full blur-container" id="partner-answer-container">
+          <div class="blur-overlay" id="partner-answer-lock">
+            <div class="w-10 h-10 rounded-full glass border-pink-500/30 flex items-center justify-center mb-2">
+              <i data-lucide="lock" class="w-4 h-4 text-pink-400"></i>
+            </div>
+            <div class="text-xs font-semibold mb-1">Respuesta bloqueada</div>
+            <div class="text-[10px] max-w-xs text-purple-200/50">Responde primero para poder revelar lo que tu pareja ha escrito.</div>
+          </div>
+          
+          <div class="flex flex-col justify-between h-full blur-text" id="partner-answer-content">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style="background: var(--accent-2); color: var(--bg)" id="partner-avatar">?</div>
+              <div class="font-display text-base" id="partner-name-label">Tu pareja</div>
+            </div>
+            <div id="partner-answer-display" class="input flex-1 h-[110px] md:h-[130px] overflow-y-auto text-xs" style="white-space: pre-wrap;">
+              Tu pareja aún no responde
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMORIA -->
+    <div id="section-memoria" class="section">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2 flex-shrink-0">
+        <div>
+          <h2 class="font-display text-2xl font-light">Memoria de a dos</h2>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="glass px-3 py-1 rounded-xl text-center">
+            <span class="text-[10px]" style="color: var(--muted)">Movs: </span><span class="font-display text-sm" id="mem-moves">0</span>
+          </div>
+          <div class="glass px-3 py-1 rounded-xl text-center">
+            <span class="text-[10px]" style="color: var(--muted)">Parejas: </span><span class="font-display text-sm"><span id="mem-pairs">0</span>/8</span>
+          </div>
+          <button id="mem-restart" class="btn-ghost py-1 px-2"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </div>
+      
+      <div class="flex-1 flex flex-col justify-center overflow-hidden">
+        <div id="memory-board" class="grid grid-cols-4 gap-2.5 max-w-[320px] mx-auto w-full"></div>
+      </div>
+
+      <div id="mem-complete" class="mt-4 text-center flex-shrink-0" hidden>
+        <div class="glass rounded-2xl p-4 inline-block shadow-lg border-pink-500/20">
+          <div class="text-sm font-semibold" style="color: var(--accent)">¡Completado! 🎉</div>
+          <button class="btn-primary mt-2 text-xs py-1 px-4" onclick="initSharedMemory()">Jugar otra vez</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERDAD O RETO -->
+    <div id="section-verdadr" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light mb-1">Verdad o Reto</h2>
+        <p class="text-xs" style="color: var(--muted)">Las elecciones se revelan al mismo tiempo.</p>
+      </div>
+      <div class="flex justify-center gap-3 mb-4 flex-shrink-0">
+        <button class="tod-choice btn-primary py-2 px-6 text-xs" data-type="truth"><i data-lucide="eye" class="w-3.5 h-3.5 inline mr-1"></i>Verdad</button>
+        <button class="tod-choice btn-ghost py-2 px-6 text-xs" data-type="dare" style="border-color: var(--accent-2); color: var(--accent-2)"><i data-lucide="zap" class="w-3.5 h-3.5 inline mr-1"></i>Reto</button>
+      </div>
+      <div class="max-w-md mx-auto w-full flex-1 flex flex-col justify-center">
+        <div id="tod-card" class="tod-card glass shadow-lg min-h-[220px]">
+          <div id="tod-content" class="text-center">
+            <div class="font-display text-5xl mb-3 opacity-20">?</div>
+            <div class="text-xs" style="color: var(--muted)">Pulsad un botón para empezar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="section-quiz" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light">¿Quién es más...?</h2>
+      </div>
+      <div class="glass rounded-2xl p-4 mb-4 text-center max-w-md mx-auto flex-shrink-0">
+        <div class="text-[10px] uppercase tracking-widest mb-1" style="color: var(--muted)">Pregunta <span id="quiz-num">1</span></div>
+        <div class="font-display text-lg" id="quiz-question-text">—</div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-4 max-w-md mx-auto flex-shrink-0">
+        <button class="quiz-vote-btn glass rounded-xl p-4 text-left" id="quiz-vote-btn-1">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs" style="background: var(--accent); color: var(--bg)" id="quiz-avatar-1">G</div>
+            <span class="font-display text-sm" id="quiz-name-1">Gabriel</span>
+          </div>
+        </button>
+        <button class="quiz-vote-btn glass rounded-xl p-4 text-left" id="quiz-vote-btn-2">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs" style="background: var(--accent-2); color: var(--bg)" id="quiz-avatar-2">A</div>
+            <span class="font-display text-sm" id="quiz-name-2">Alexa</span>
+          </div>
+        </button>
+      </div>
+      <div class="glass rounded-2xl p-4 max-w-md mx-auto flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span id="quiz-result-name-1">Gabriel</span><span id="quiz-votes-1">0 votos</span></div>
+            <div class="quiz-bar"><div class="quiz-fill" id="quiz-bar-1" style="width: 50%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1"><span id="quiz-result-name-2">Alexa</span><span id="quiz-votes-2">0 votos</span></div>
+            <div class="quiz-bar"><div class="quiz-fill" id="quiz-bar-2" style="width: 50%"></div></div>
+          </div>
+        </div>
+        <button id="quiz-next" class="btn-ghost flex items-center gap-1.5 mx-auto mt-4 text-xs py-1.5 px-4"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>Siguiente</button>
+      </div>
+    </div>
+
+    <!-- RULETA (NUEVO!) -->
+    <div id="section-ruleta" class="section">
+      <div class="text-center mb-3 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light">La Ruleta del Amor</h2>
+        <p class="text-[10px]" style="color: var(--muted)">¡Gira en tiempo real para ambos!</p>
+      </div>
+      <div class="flex-1 flex flex-col justify-center items-center overflow-hidden">
+        <div class="roulette-container">
+          <div class="roulette-pointer"></div>
+          <div class="roulette-center"></div>
+          <div class="roulette-wheel" id="roulette-wheel">
+            <!-- Renders dynamically in script -->
+          </div>
+        </div>
+        <button id="spin-btn" class="btn-primary py-2 px-8 mt-5 shadow-lg flex items-center gap-2 text-xs"><i data-lucide="compass" class="w-3.5 h-3.5"></i>Girar Ruleta 🎡</button>
+      </div>
+      <div id="ruleta-result" class="text-center mt-3 h-8 text-xs font-semibold text-pink-300 flex-shrink-0">—</div>
+    </div>
+
+    <!-- TRES EN RAYA (NUEVO!) -->
+    <div id="section-tresenraya" class="section">
+      <div class="text-center mb-3 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light">Tres en Raya Romántico</h2>
+        <div class="text-[10px] mt-0.5" style="color: var(--muted)" id="ttt-turn-display">Cargando partida...</div>
+      </div>
+      
+      <div class="flex-1 flex flex-col justify-center overflow-hidden">
+        <div class="ttt-grid" id="ttt-board">
+          <!-- 9 celdas -->
+        </div>
+      </div>
+
+      <div class="text-center mt-4 flex-shrink-0">
+        <button id="ttt-restart" class="btn-ghost py-1.5 px-4 text-xs flex items-center gap-1.5 mx-auto"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Reiniciar tablero</button>
+      </div>
+    </div>
+
+    <!-- VALES DE AMOR (NUEVO!) -->
+    <div id="section-vales" class="section">
+      <div class="flex items-center justify-between mb-4 flex-shrink-0">
+        <div>
+          <h2 class="font-display text-2xl font-light">Vales de Amor</h2>
+          <p class="text-[10px]" style="color: var(--muted)">Canjead cupones con vuestra pareja.</p>
+        </div>
+        <div class="flex gap-1.5">
+          <button class="btn-ghost py-1 px-3 text-xs active" id="btn-vales-gift" onclick="switchValesTab('gift')">Regalar</button>
+          <button class="btn-ghost py-1 px-3 text-xs" id="btn-vales-mine" onclick="switchValesTab('mine')">Recibidos</button>
+        </div>
+      </div>
+
+      <!-- PESTAÑA REGALAR -->
+      <div id="vales-tab-gift" class="flex-1 overflow-hidden flex flex-col">
+        <div class="inner-scroll flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3" id="vales-catalog-list">
+          <!-- Catalog rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- PESTAÑA RECIBIDOS Y HISTORIAL -->
+      <div id="vales-tab-mine" class="flex-1 overflow-hidden flex flex-col gap-4" hidden>
+        <div class="flex-1 overflow-hidden flex flex-col">
+          <div class="text-xs font-semibold mb-2" style="color: var(--muted)">Mis Vales Disponibles</div>
+          <div class="inner-scroll flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3" id="vales-my-list">
+            <!-- Received coupons -->
+          </div>
+        </div>
+        <div class="h-[100px] border-t border-white/5 pt-3 overflow-hidden flex flex-col">
+          <div class="text-[10px] uppercase tracking-widest font-semibold mb-2" style="color: var(--muted)">Historial Canjeados</div>
+          <div class="inner-scroll flex-1 space-y-1.5 text-xs text-purple-200/50" id="vales-history-list">
+            <!-- Redeemed history -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RETOS -->
+    <div id="section-retos" class="section">
+      <div class="flex items-center justify-between mb-4 flex-shrink-0">
+        <div>
+          <h2 class="font-display text-2xl font-light">Retos para hacer</h2>
+        </div>
+        <div class="glass px-3 py-1 rounded-xl text-center text-xs">
+          <span id="retos-done">0</span>/<span id="retos-total">0</span>
+        </div>
+      </div>
+      <div id="retos-list" class="space-y-2 flex-1 inner-scroll mb-4"></div>
+      <div class="glass rounded-2xl p-4 flex-shrink-0">
+        <div class="text-[10px] uppercase tracking-widest mb-2 font-semibold" style="color: var(--muted)">Añadir reto personalizado</div>
+        <div class="flex gap-2">
+          <input id="new-reto-input" type="text" class="input py-2 text-xs" placeholder="Escribe algo bonito...">
+          <button id="add-reto-btn" class="btn-primary py-2 px-4"><i data-lucide="plus" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</section>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- MODAL PARA CAMBIAR LA FECHA -->
+<div id="date-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
+  <div class="glass rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-fadeIn">
+    <div class="font-display text-xl mb-3">¿Cuándo comenzó vuestra historia?</div>
+    <input id="date-input" type="date" class="input mb-4 text-sm">
+    <div class="flex gap-2">
+      <button id="date-cancel" class="btn-ghost flex-1 py-2 text-xs">Cancelar</button>
+      <button id="date-save" class="btn-primary flex-1 py-2 text-xs">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Error catcher global para depuración
+window.onerror = function(message, source, lineno, colno, error) {
+  const errorMsg = "ERROR DETECTADO:\n" + message + "\nEn: " + source + "\nLínea: " + lineno + "\nColumna: " + colno + "\nDetalle: " + (error ? error.stack : 'Ninguno');
+  console.error(errorMsg);
+  alert(errorMsg);
+  return false;
+};
+
+// ===== SINTETIZADOR DE AUDIO (WEB AUDIO API) =====
+class LoveAudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+  }
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+  playTone(freq, duration, type = 'sine') {
+    if (!this.enabled) return;
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) { console.warn("Audio error", e); }
+  }
+  playMatch() {
+    this.playTone(523.25, 0.15, 'triangle');
+    setTimeout(() => this.playTone(659.25, 0.15, 'triangle'), 80);
+    setTimeout(() => this.playTone(783.99, 0.15, 'triangle'), 160);
+    setTimeout(() => this.playTone(1046.50, 0.3, 'triangle'), 240);
+  }
+  playFlip() {
+    this.playTone(330, 0.08, 'sine');
+  }
+  playPoke() {
+    this.playTone(587.33, 0.15, 'sine');
+    setTimeout(() => this.playTone(880, 0.35, 'sine'), 80);
+  }
+  playKiss() {
+    this.playTone(698.46, 0.1, 'triangle');
+    setTimeout(() => this.playTone(830.61, 0.1, 'triangle'), 50);
+    setTimeout(() => this.playTone(1046.50, 0.25, 'sine'), 100);
+  }
+  playTick() {
+    this.playTone(950, 0.012, 'sine');
+  }
+  toggle() {
+    this.enabled = !this.enabled;
+    return this.enabled;
+  }
+}
+const audio = new LoveAudioEngine();
+
+// ===== CONFIGURACIÓN DE RED (FIREBASE) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBIl1halZT4UFTfkV0G4UvAZNPwHTj0uow",
+  authDomain: "nosotros-gabriel-alexa.firebaseapp.com",
+  databaseURL: "https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com",
+  projectId: "nosotros-gabriel-alexa",
+  storageBucket: "nosotros-gabriel-alexa.firebasestorage.app",
+  messagingSenderId: "539988368666",
+  appId: "1:539988368666:web:e65a5d800d295d4ff7e0a3",
+  measurementId: "G-B6B5N2KK0V"
+};
+
+let db = null;
+let roomRef = null;
+let actionsRef = null;
+
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  } else {
+    console.warn("Firebase SDK could not be loaded. Operating in offline/local mode.");
+  }
+} catch (e) {
+  console.error("Error initializing Firebase:", e);
+}
+
+// ===== DATOS Y CONSTANTES =====
+const SESSION_KEY = 'nosotros_app_session_ga';
+const LOCAL_KEY = 'nosotros_app_local_ga_';
+
+const DAILY_QUESTIONS = [
+  "¿Qué fue lo primero que te atrajo de mí?", 
+  "¿Cuál es tu recuerdo favorito de los dos?",
+  "Si pudiéramos viajar a cualquier lugar mañana, ¿a dónde iríamos?", 
+  "¿Qué canción te recuerda a nosotros?",
+  "¿Qué es lo que más admiras de mí?", 
+  "¿Cuál ha sido nuestro mejor momento juntos este mes?",
+  "Si nuestra relación fuera una película, ¿cuál sería?", 
+  "¿Qué pequeña cosa cotidiana hago que te hace sonreír?",
+  "¿A dónde te gustaría ir en nuestra próxima cita especial?", 
+  "¿Qué hemos aprendido el uno del otro recientemente?",
+  "¿Cuál es tu beso favorito de todos los que nos hemos dado?", 
+  "Si tuvieras que describirme en tres palabras, ¿cuáles serían?",
+  "¿Qué tradición bonita te gustaría crear como pareja?", 
+  "¿Qué es lo que más te gusta de nuestra complicidad?",
+  "¿Cuál es tu mayor sueño compartido conmigo?", 
+  "¿Qué harías si tuviéramos un fin de semana entero solo para nosotros?",
+  "¿Cuál es tu parte favorita de nuestro día a día?", 
+  "¿Qué te hace sentir más amado/a por mí?",
+  "Si volviéramos a conocernos, ¿cambiarías algo de nuestra historia?", 
+  "¿Qué aventura te gustaría tener conmigo este año?"
+];
+
+const TRUTHS = [
+  "¿Cuál fue el momento exacto en que te diste cuenta de que te gustaba?", 
+  "¿Qué pensaste la primera vez que me viste?",
+  "¿Qué detalle de mi personalidad te da más ternura?", 
+  "¿Cuándo sentiste que lo nuestro iba a ser algo tan bonito?",
+  "¿Qué es lo que más te atrae físicamente de mí en este momento?", 
+  "¿Qué canción describe perfectamente cómo te sientes a mi lado?",
+  "¿Qué miedo tenías al principio de salir juntos que ya ha desaparecido?",
+  "¿Qué es lo que más te gusta que hagamos en la cama o abrazados?"
+];
+
+const DARES = [
+  "Dale a tu pareja un beso que dure 10 segundos enteros", 
+  "Abrázame por 30 segundos sin decir una sola palabra",
+  "Dime 3 cosas que amas de mí mirándome fijamente a los ojos", 
+  "Baila conmigo una canción lenta en este mismo instante",
+  "Dame un masaje de 2 minutos en los hombros o el cuello", 
+  "Mírame a los ojos durante 1 minuto completo sin reírte",
+  "Hazme una pequeña declaración de amor en tono poético o cómico",
+  "Escríbeme un mensaje corto de amor por chat ahora mismo"
+];
+
+const QUIZ_QUESTIONS = [
+  "¿Quién es más romántico/a?", 
+  "¿Quién tarda más en arreglarse?", 
+  "¿Quién es más celoso/a?",
+  "¿Quién cocina mejor?", 
+  "¿Quién es más puntual?", 
+  "¿Quién empieza las discusiones más tontas?",
+  "¿Quién pide perdón primero?", 
+  "¿Quién recuerda más las fechas importantes y aniversarios?",
+  "¿Quién es más consentidor/a?",
+  "¿Quién es más dormilón/a?"
+];
+
+const DEFAULT_RETOS = [
+  // De Pareja / Románticos
+  "Cocinar juntos una receta nueva y exótica 🍳", 
+  "Hacer un picnic sorpresa en un parque o salón 🧺", 
+  "Bailar juntos bajo la lluvia o en el salón de casa 💃🕺",
+  "Escribirnos una carta física a mano y sellarla en un sobre ✉️", 
+  "Ver la puesta de sol juntos compartiendo un café 🌅", 
+  "Preparar un desayuno completo en la cama para el otro 🥞",
+  "Tener una tarde entera sin pantallas, solo hablando y jugando 📱🚫", 
+  "Crear una lista de reproducción de canciones compartida 🎵",
+  "Tener una noche de películas con un fuerte de cobijas y palomitas ⛺🍿",
+  "Dar un paseo nocturno tomados de la mano bajo la luna 🌙",
+  
+  // Tontos / Divertidos
+  "Hacer un concurso de muecas y ver quién aguanta más sin reírse 🤪",
+  "Hablar con acento extranjero (ej: italiano o francés) durante 1 hora 🍕",
+  "Hacerse un peinado ridículo el uno al otro usando pinzas o gomitas 💇‍♂️",
+  "Tener una guerra de almohadas suave en la cama 🛌",
+  "Imitar el emoji que tu pareja elija durante 30 segundos 🎭",
+  "Grabar un video gracioso haciendo playback de vuestra canción favorita 🎤",
+  "Alimentarse con los ojos vendados e intentar adivinar qué es 🍓",
+  
+  // Picantes / Atrevidos
+  "Darle un masaje relajante con aceite tibio de 10 minutos a tu pareja 💆",
+  "Susurrar al oído algo atrevido que te gustaría hacer hoy 🤫",
+  "Bailar de forma sensual para tu pareja durante 1 minuto completo 🔥",
+  "Darle un beso a tu pareja en el cuello que le cause escalofríos 💋",
+  "Escribirle un mensaje de texto coqueto o picante a mitad del día 💬",
+  "Darle un baño tibio a tu pareja con velas y música relajante 🛁🕯️",
+  "Jugar una ronda extra de Verdad o Reto donde solo valgan opciones picantes 🌶️"
+];
+
+const SURPRISES = [
+  "Te quiero más de lo que las palabras pueden expresar, Gabriel ❤️",
+  "Eres mi refugio favorito, Alexa ❤️",
+  "Si tuviera que elegir de nuevo, te elegiría a ti mil veces más.",
+  "Gracias por hacer de lo cotidiano una aventura increíble.",
+  "Contigo la vida tiene un color y un brillo mucho más bonito.",
+  "Eres la persona por la que sonrío mirando la pantalla del móvil."
+];
+
+const MEMORY_EMOJIS = ['💗', '🌹', '💑', '💍', '🍫', '🌙', '☕', '🎵'];
+
+const RULETA_OPTIONS = [
+  { text: "💋 Un beso largo", key: "beso" },
+  { text: "🫂 Abrazo de 30s", key: "abrazo" },
+  { text: "🍰 Invitar un postre", key: "postre" },
+  { text: "☕ Hacer café/té", key: "cafe" },
+  { text: "💬 Decir un poema", key: "poema" },
+  { text: "💆 Masaje de 2 min", key: "masaje" },
+  { text: "🎭 Hacer una mueca", key: "mueca" },
+  { text: "🎁 Un cumplido", key: "cumplido" }
+];
+
+const VALES_CATALOG = [
+  { title: "🎟️ Vale por un masaje relajante", desc: "Masaje de 15 minutos en la espalda o pies." },
+  { title: "🎟️ Vale por una cena especial", desc: "Tú eliges el menú o pedimos tu comida favorita." },
+  { title: "🎟️ Vale por elegir película", desc: "Elegir película hoy sin protestar." },
+  { title: "🎟️ Vale por un abrazo gigante", desc: "Abrazo fuerte de 5 minutos ininterrumpido." },
+  { title: "🎟️ Vale por desayuno en cama", desc: "Desayuno preparado y servido a tu despertar." },
+  { title: "🎟️ Vale por no cocinar hoy", desc: "Libre de cocinar o limpiar platos por hoy." },
+  { title: "🎟️ Vale por un perdón instantáneo", desc: "Comodín para resolver un pequeño malentendido." }
+];
+
+const TTT_CELL_PROMPTS = [
+  "Beso en la mejilla 💋", "Dime un cumplido tierno 🥰", "Guiño de ojo 😉",
+  "Manda un corazoncito 💖", "Haz una pose tierna ✌️", "Cuéntame un secreto 🤫",
+  "Hazme reír 😂", "Imita un gatito lindo 🐱", "Dibuja un corazón en el aire ❤️"
+];
+
+let state = { user: null, roomKey: null, room: null, me: null, partner: null, currentQuizIdx: 0 };
+
+// ===== UTILIDADES =====
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function saveSession(user, key) { localStorage.setItem(SESSION_KEY, JSON.stringify({ user, key })); }
+function getSession() { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+function saveLocal() {
+  if (state.roomKey && state.room) {
+    localStorage.setItem(LOCAL_KEY + state.roomKey, JSON.stringify(state.room));
+  }
+}
+function getLocal(key) { return JSON.parse(localStorage.getItem(LOCAL_KEY + key) || 'null'); }
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function daysBetween(d1, d2) { return Math.floor(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)); }
+
+function getDetailedDateBreakdown(startDateStr) {
+  const start = new Date(startDateStr + 'T00:00:00');
+  const now = new Date();
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  let days = now.getDate() - start.getDate();
+  if (days < 0) {
+    months--;
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  let parts = [];
+  if (years > 0) parts.push(`${years} ${years === 1 ? 'año' : 'años'}`);
+  if (months > 0) parts.push(`${months} ${months === 1 ? 'mes' : 'meses'}`);
+  const weeks = Math.floor(days / 7);
+  const remainingDays = days % 7;
+  if (weeks > 0) parts.push(`${weeks} ${weeks === 1 ? 'semana' : 'semanas'}`);
+  if (remainingDays > 0) parts.push(`${remainingDays} ${remainingDays === 1 ? 'día' : 'días'}`);
+  if (parts.length === 0) return '¡Primer día! 🎉';
+  return parts.join(', ');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function questionForToday() {
+  const startOfYear = new Date(new Date().getFullYear(), 0, 0);
+  const diff = Date.now() - startOfYear;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return DAILY_QUESTIONS[dayOfYear % DAILY_QUESTIONS.length];
+}
+
+function refreshIcons() { if (window.lucide) lucide.createIcons(); }
+
+// Corazones flotantes de fondo
+function spawnHeart() {
+  const container = document.getElementById('hearts-container');
+  if (!container) return;
+  const heart = document.createElement('div');
+  heart.className = 'heart-bg'; heart.innerHTML = '♥';
+  heart.style.left = Math.random() * 100 + 'vw';
+  heart.style.fontSize = (Math.random() * 18 + 14) + 'px';
+  heart.style.animationDuration = (Math.random() * 4 + 7) + 's';
+  container.appendChild(heart);
+  setTimeout(() => heart.remove(), 8000);
+}
+setInterval(spawnHeart, 3000);
+
+// Explosión de emojis
+function triggerEmojiExplosion(emoji) {
+  for (let i = 0; i < 22; i++) {
+    const el = document.createElement('div');
+    el.className = 'emoji-pop'; el.innerHTML = emoji;
+    el.style.left = '50%'; el.style.top = '50%';
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 80 + Math.random() * 180;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance - 30;
+    const rot = Math.random() * 180 - 90;
+    el.style.setProperty('--tx', `${tx}px`);
+    el.style.setProperty('--ty', `${ty}px`);
+    el.style.setProperty('--rot', `${rot}deg`);
+    el.style.animationDelay = `${Math.random() * 0.2}s`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+  }
+}
+
+// ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
+function connectMQTT() {
+  const statusEl = document.getElementById('conn-status');
+  
+  if (!db) {
+    if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    const subtitleEl = document.getElementById('header-subtitle');
+    if (subtitleEl) {
+      subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Modo local (sin red)';
+    }
+    console.warn("Firebase Database not available. Operating in local mode.");
+    return;
+  }
+
+  if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
+  const subtitleEl = document.getElementById('header-subtitle');
+  if (subtitleEl) {
+    subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
+  }
+
+  roomRef = db.ref('rooms/' + state.roomKey);
+  actionsRef = db.ref('rooms/' + state.roomKey + '/actions');
+
+  // 1. Escuchar cambios de estado en tiempo real
+  roomRef.on('value', (snapshot) => {
+    const liveStatusEl = document.getElementById('conn-status');
+    if (liveStatusEl) liveStatusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
+    const liveSubtitleEl = document.getElementById('header-subtitle');
+    if (liveSubtitleEl) {
+      liveSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-green-400"></span> En tiempo real';
+    }
+
+    const remoteState = snapshot.val();
+    if (remoteState) {
+      if (!state.room || (remoteState.lastUpdated || 0) > (state.room.lastUpdated || 0)) {
+        const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
+        const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
+        
+        state.room = remoteState;
+        state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
+        state.partner = state.user.role === 'user1' ? state.room.user2 : state.room.user1;
+        state.currentQuizIdx = state.room.quizIdx || 0;
+        saveLocal();
+        
+        if (newRuletaTs > oldRuletaTs) {
+          triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
+        } else {
+          renderAll();
+        }
+      }
+    }
+  }, (error) => {
+    const errStatusEl = document.getElementById('conn-status');
+    if (errStatusEl) errStatusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
+    const errSubtitleEl = document.getElementById('header-subtitle');
+    if (errSubtitleEl) {
+      errSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Error de red';
+    }
+    console.error("Firebase read error", error);
+  });
+
+  // 2. Escuchar pokes de amor en tiempo real
+  actionsRef.limitToLast(1).on('child_added', (snapshot) => {
+    const act = snapshot.val();
+    // Solo disparar si la acción es nueva y no es del usuario actual
+    if (act && act.sender !== state.user.name && (Date.now() - act.timestamp < 10000)) {
+      const actionMap = {
+        'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
+        'hug': { emoji: '🫂', text: 'te mandó un abrazo de oso' },
+        'heart': { emoji: '💖', text: 'te mandó un te amo' },
+        'miss': { emoji: '🥺', text: 'te extraña mucho' }
+      };
+      const actDetail = actionMap[act.action] || { emoji: '❤️', text: 'te mandó amor' };
+      if (act.action === 'kiss') audio.playKiss();
+      else audio.playPoke();
+      triggerEmojiExplosion(actDetail.emoji);
+      showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
+    }
+  });
+}
+
+function updateState(updaterFunction) {
+  if (!state.room) return;
+  updaterFunction(state.room);
+  state.room.lastUpdated = Date.now();
+  saveLocal();
+  if (roomRef) {
+    roomRef.set(state.room).catch(e => console.error("Firebase write error", e));
+  }
+  renderAll();
+}
+
+function sendLoveAction(actionType) {
+  if (actionsRef) {
+    actionsRef.push({
+      action: actionType,
+      sender: state.user.name,
+      timestamp: Date.now()
+    });
+    const emojiMap = { 'kiss': '💋', 'hug': '🫂', 'heart': '💖', 'miss': '🥺' };
+    showToast(`¡Le enviaste un amor! ${emojiMap[actionType] || ''}`);
+    if (actionType === 'kiss') audio.playKiss();
+    else audio.playPoke();
+  } else {
+    showToast('Sin conexión');
+  }
+}
+
+// ===== INITIALIZATION & LOGOUT =====
+function initApp() {
+  const session = getSession();
+  if (!session || !session.user || session.key !== '230426') {
+    clearSession();
+    window.location.replace('index.html');
+    return;
+  }
+
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) loadingScreen.style.display = 'flex';
+  
+  let room = getLocal(session.key) || {
+    key: session.key,
+    startDate: '2026-04-23',
+    user1: { name: 'Gabriel', mood: null, moodNote: null, moodDate: null },
+    user2: { name: 'Alexa', mood: null, moodNote: null, moodDate: null },
+    answers: {},
+    quizVotes: {},
+    quizIdx: 0,
+    retos: DEFAULT_RETOS.map((text, i) => ({ id: 'r' + i, text, done: false })),
+    customRetos: [],
+    memoryBoard: null,
+    currentTod: null,
+    currentRuleta: null,
+    ticTacToe: null,
+    coupons: [],
+    lastUpdated: Date.now()
+  };
+  
+  state.user = session.user;
+  state.roomKey = session.key;
+  state.room = room;
+
+  // Inicializaciones preventivas en el estado si la sala fue creada vieja o está incompleta en LocalStorage
+  if (!state.room.user1) state.room.user1 = { name: 'Gabriel', mood: null, moodNote: null, moodDate: null };
+  if (!state.room.user2) state.room.user2 = { name: 'Alexa', mood: null, moodNote: null, moodDate: null };
+  if (!state.room.coupons) state.room.coupons = [];
+  if (!state.room.customRetos) state.room.customRetos = [];
+  if (!state.room.answers) state.room.answers = {};
+  if (!state.room.quizVotes) state.room.quizVotes = {};
+  if (!state.room.ticTacToe) initSharedTicTacToeState(state.room);
+
+  state.me = session.user.role === 'user1' ? state.room.user1 : state.room.user2;
+  state.partner = session.user.role === 'user1' ? state.room.user2 : state.room.user1;
+  state.currentQuizIdx = state.room.quizIdx || 0;
+
+  const userPill = document.getElementById('user-pill');
+  if (userPill) userPill.textContent = session.user.name;
+
+  const appScreen = document.getElementById('app-screen');
+  if (appScreen) appScreen.hidden = false;
+  
+  if (loadingScreen) loadingScreen.style.display = 'none';
+  
+  switchSection('dashboard');
+  connectMQTT();
+  renderAll();
+}
+
+function logout() {
+  if (roomRef) roomRef.off();
+  if (actionsRef) actionsRef.off();
+  clearSession();
+  state.user = null; state.roomKey = null; state.room = null;
+  window.location.replace('index.html');
+}
+
+// ===== RENDERIZADO CENTRAL =====
+function renderAll() {
+  if (!state.room) return;
+  document.getElementById('header-key').textContent = state.roomKey;
+  
+  const u1 = state.room.user1?.name || 'Gabriel';
+  const u2 = state.room.user2?.name || 'Alexa';
+  document.getElementById('header-subtitle').innerHTML = `<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ${u1} & ${u2}`;
+  
+  renderDays(); 
+  renderMood(); 
+  renderQuestion(); 
+  renderSharedMemoryBoard(); 
+  renderQuiz(); 
+  renderRetos();
+  renderSharedTod();
+  renderRuletaStructure();
+  renderSharedTicTacToe();
+  renderSharedCoupons();
+  refreshIcons();
+}
+
+function renderDays() {
+  const start = state.room.startDate || '2026-04-23';
+  document.getElementById('days-count').textContent = daysBetween(new Date(start + 'T00:00:00'), new Date());
+  document.getElementById('start-date').textContent = formatDate(start);
+  document.getElementById('date-breakdown').textContent = getDetailedDateBreakdown(start);
+}
+
+function renderMood() {
+  const today = todayStr();
+  document.getElementById('mood-date').textContent = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+
+  if (state.me && state.me.moodDate === today && state.me.mood) {
+    document.querySelector(`.mood-btn[data-mood="${state.me.mood}"]`)?.classList.add('selected');
+    document.getElementById('mood-greeting').textContent = `Hoy te sientes: ${state.me.mood}`;
+    if (state.me.moodNote) {
+      document.getElementById('mood-note-input').value = state.me.moodNote;
+    }
+  } else {
+    document.getElementById('mood-greeting').textContent = `Hola ${state.user.name}, ¿cómo estás?`;
+    document.getElementById('mood-note-input').value = '';
+  }
+
+  const moodContainer = document.getElementById('partner-mood');
+  if (state.partner && state.partner.moodDate === today && state.partner.mood) {
+    let noteText = state.partner.moodNote ? `<p class="text-[10px] italic mt-0.5 text-white/50">"${state.partner.moodNote}"</p>` : '';
+    moodContainer.innerHTML = `
+      <div class="text-2xl">${state.partner.mood}</div>
+      <div>
+        <div class="font-semibold text-white leading-none">${state.partner.name} se siente así</div>
+        ${noteText}
+      </div>
+    `;
+  } else {
+    moodContainer.innerHTML = `
+      <div class="w-6 h-6 rounded-full border border-dashed border-white/20 flex items-center justify-center text-[10px]">?</div>
+      <div class="text-[10px]" style="color: var(--muted)">${state.partner?.name || 'Tu pareja'} aún no registra mood hoy</div>
+    `;
+  }
+}
+
+function setMood(mood) {
+  const today = todayStr();
+  updateState(room => {
+    room[state.user.role].mood = mood;
+    room[state.user.role].moodDate = today;
+  });
+  showToast('¡Mood actualizado! 😍');
+  audio.playPoke();
+}
+
+function saveMoodNote() {
+  const note = document.getElementById('mood-note-input').value.trim();
+  const today = todayStr();
+  updateState(room => {
+    room[state.user.role].moodNote = note || null;
+    room[state.user.role].moodDate = today;
+  });
+  showToast('Nota de mood guardada');
+}
+
+// ===== PREGUNTAS DEL DÍA =====
+function renderQuestion() {
+  const question = questionForToday();
+  document.getElementById('daily-question').textContent = question;
+  
+  const today = todayStr();
+  const ans = state.room.answers?.[today] || { user1: '', user2: '' };
+  const myAns = state.user.role === 'user1' ? ans.user1 : ans.user2;
+  const partnerAns = state.user.role === 'user1' ? ans.user2 : ans.user1;
+
+  document.getElementById('my-avatar').textContent = state.user.name[0];
+  document.getElementById('my-name-label').textContent = state.user.name;
+  document.getElementById('my-answer').value = myAns || '';
+
+  document.getElementById('partner-avatar').textContent = state.partner ? state.partner.name[0] : '?';
+  document.getElementById('partner-name-label').textContent = state.partner ? state.partner.name : 'Tu pareja';
+
+  const partnerDisplay = document.getElementById('partner-answer-display');
+  const lockOverlay = document.getElementById('partner-answer-lock');
+  const contentBlock = document.getElementById('partner-answer-content');
+
+  if (!myAns) {
+    lockOverlay.style.display = 'flex';
+    contentBlock.classList.add('blur-text');
+    partnerDisplay.textContent = 'Bloqueado';
+  } else {
+    lockOverlay.style.display = 'none';
+    contentBlock.classList.remove('blur-text');
+    if (partnerAns) {
+      partnerDisplay.textContent = partnerAns;
+      partnerDisplay.style.color = 'var(--fg)';
+      partnerDisplay.style.fontStyle = 'normal';
+    } else {
+      partnerDisplay.textContent = `${state.partner?.name || 'Tu pareja'} aún no responde.`;
+      partnerDisplay.style.color = 'var(--muted)';
+      partnerDisplay.style.fontStyle = 'italic';
+    }
+  }
+}
+
+function saveAnswer() {
+  const text = document.getElementById('my-answer').value.trim();
+  if (!text) return showToast('Escribe algo primero');
+  const today = todayStr();
+  
+  updateState(room => {
+    if (!room.answers) room.answers = {};
+    if (!room.answers[today]) room.answers[today] = { user1: '', user2: '' };
+    room.answers[today][state.user.role] = text;
+  });
+  showToast('Respuesta guardada');
+  audio.playMatch();
+}
+
+// ===== MEMORIA =====
+function initSharedMemory() {
+  const emojis = [...MEMORY_EMOJIS, ...MEMORY_EMOJIS].map(e => ({ e, r: Math.random() })).sort((a,b) => a.r - b.r);
+  updateState(room => {
+    room.memoryBoard = {
+      cards: emojis.map((c, i) => ({ id: i, emoji: c.e, status: 'closed' })),
+      flippedIndices: [], moves: 0, pairs: 0, lock: false
+    };
+  });
+  audio.playPoke();
+}
+
+function renderSharedMemoryBoard() {
+  const boardEl = document.getElementById('memory-board');
+  const completeEl = document.getElementById('mem-complete');
+  
+  if (!state.room.memoryBoard) {
+    boardEl.innerHTML = `
+      <div class="col-span-4 text-center py-6 glass rounded-2xl">
+        <p class="text-xs text-purple-200/60 mb-3">¿Jugamos una partida?</p>
+        <button onclick="initSharedMemory()" class="btn-primary py-1.5 px-4 text-xs">Comenzar</button>
+      </div>
+    `;
+    completeEl.hidden = true;
+    document.getElementById('mem-moves').textContent = '0';
+    document.getElementById('mem-pairs').textContent = '0';
+    return;
+  }
+
+  const board = state.room.memoryBoard;
+  document.getElementById('mem-moves').textContent = board.moves;
+  document.getElementById('mem-pairs').textContent = board.pairs;
+  completeEl.hidden = (board.pairs < 8);
+
+  boardEl.innerHTML = '';
+  board.cards.forEach((card) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = `memory-card ${card.status === 'flipped' || card.status === 'matched' ? 'flipped' : ''}`;
+    cardEl.innerHTML = `
+      <div class="memory-inner">
+        <div class="memory-face memory-front"><i data-lucide="heart" class="w-5 h-5" style="color: var(--accent)"></i></div>
+        <div class="memory-face memory-back">${card.emoji}</div>
+      </div>
+    `;
+    cardEl.addEventListener('click', () => handleCardClick(card.id));
+    boardEl.appendChild(cardEl);
+  });
+  refreshIcons();
+}
+
+function handleCardClick(cardId) {
+  const board = state.room.memoryBoard;
+  if (!board || board.lock) return;
+  const card = board.cards.find(c => c.id === cardId);
+  if (card.status !== 'closed') return;
+
+  audio.playFlip();
+
+  updateState(room => {
+    const b = room.memoryBoard;
+    const c = b.cards.find(x => x.id === cardId);
+    c.status = 'flipped';
+    b.flippedIndices.push(cardId);
+
+    if (b.flippedIndices.length === 2) {
+      b.moves++;
+      const [idx1, idx2] = b.flippedIndices;
+      const card1 = b.cards.find(x => x.id === idx1);
+      const card2 = b.cards.find(x => x.id === idx2);
+
+      if (card1.emoji === card2.emoji) {
+        card1.status = 'matched';
+        card2.status = 'matched';
+        b.pairs++;
+        b.flippedIndices = [];
+        setTimeout(() => audio.playMatch(), 100);
+      } else {
+        b.lock = true;
+        setTimeout(() => {
+          updateState(r => {
+            const rb = r.memoryBoard;
+            const rc1 = rb.cards.find(x => x.id === idx1);
+            const rc2 = rb.cards.find(x => x.id === idx2);
+            if (rc1) rc1.status = 'closed';
+            if (rc2) rc2.status = 'closed';
+            rb.flippedIndices = [];
+            rb.lock = false;
+          });
+        }, 1200);
+      }
+    }
+  });
+}
+
+// ===== VERDAD O RETO =====
+function renderSharedTod() {
+  const tod = state.room.currentTod;
+  const card = document.getElementById('tod-card');
+  const content = document.getElementById('tod-content');
+  
+  if (!tod) {
+    content.innerHTML = `
+      <div class="font-display text-5xl mb-3 opacity-20">?</div>
+      <div class="text-xs" style="color: var(--muted)">Pulsad un botón para empezar</div>
+    `;
+    card.style.background = 'var(--card)';
+    card.style.borderColor = 'var(--border)';
+    return;
+  }
+
+  const label = tod.type === 'truth' ? 'Verdad' : 'Reto';
+  const color = tod.type === 'truth' ? 'var(--accent)' : 'var(--accent-2)';
+  content.innerHTML = `
+    <div class="text-[10px] uppercase tracking-widest mb-3 font-semibold" style="color: ${color}">${label}</div>
+    <div class="font-display text-xl md:text-2xl mb-4 leading-snug text-center">${tod.text}</div>
+    <div class="text-[10px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10" style="color: var(--muted)">
+      Turno de: <span class="font-bold text-white">${tod.player}</span>
+    </div>
+  `;
+  card.style.background = tod.type === 'truth' 
+    ? 'linear-gradient(135deg, rgba(255, 74, 118, 0.05) 0%, rgba(28, 10, 36, 0.2) 100%)' 
+    : 'linear-gradient(135deg, rgba(255, 181, 71, 0.05) 0%, rgba(28, 10, 36, 0.2) 100%)';
+  card.style.borderColor = color;
+}
+
+function todChoose(type) {
+  const list = type === 'truth' ? TRUTHS : DARES;
+  const text = list[Math.floor(Math.random() * list.length)];
+  updateState(room => {
+    room.currentTod = { type, text, player: state.user.name, timestamp: Date.now() };
+  });
+  audio.playPoke();
+}
+
+// ===== QUIZ =====
+function renderQuiz() {
+  const idx = state.currentQuizIdx % QUIZ_QUESTIONS.length;
+  document.getElementById('quiz-num').textContent = idx + 1;
+  document.getElementById('quiz-question-text').textContent = QUIZ_QUESTIONS[idx];
+
+  const u1Name = state.room.user1?.name || 'Gabriel';
+  const u2Name = state.room.user2?.name || 'Alexa';
+  
+  document.getElementById('quiz-avatar-1').textContent = u1Name[0];
+  document.getElementById('quiz-avatar-2').textContent = u2Name[0];
+  document.getElementById('quiz-name-1').textContent = u1Name;
+  document.getElementById('quiz-name-2').textContent = u2Name;
+  document.getElementById('quiz-result-name-1').textContent = u1Name;
+  document.getElementById('quiz-result-name-2').textContent = u2Name;
+
+  const votes = state.room.quizVotes?.[idx] || { user1: null, user2: null };
+  const total1 = (votes.user1 === 1 ? 1 : 0) + (votes.user2 === 1 ? 1 : 0);
+  const total2 = (votes.user1 === 2 ? 1 : 0) + (votes.user2 === 2 ? 1 : 0);
+  const total = total1 + total2;
+  
+  document.getElementById('quiz-bar-1').style.width = (total ? (total1 / total) * 100 : 50) + '%';
+  document.getElementById('quiz-bar-2').style.width = (total ? (total2 / total) * 100 : 50) + '%';
+  document.getElementById('quiz-votes-1').textContent = `${total1} voto${total1 !== 1 ? 's' : ''}`;
+  document.getElementById('quiz-votes-2').textContent = `${total2} voto${total2 !== 1 ? 's' : ''}`;
+
+  const btn1 = document.getElementById('quiz-vote-btn-1');
+  const btn2 = document.getElementById('quiz-vote-btn-2');
+  btn1.classList.remove('voted'); btn2.classList.remove('voted');
+
+  const myVote = state.user.role === 'user1' ? votes.user1 : votes.user2;
+  if (myVote === 1) btn1.classList.add('voted');
+  if (myVote === 2) btn2.classList.add('voted');
+}
+
+function quizVote(vote) {
+  const idx = state.currentQuizIdx % QUIZ_QUESTIONS.length;
+  const votes = state.room.quizVotes?.[idx] || { user1: null, user2: null };
+  const currentVote = votes[state.user.role];
+  updateState(room => {
+    if (!room.quizVotes) room.quizVotes = {};
+    if (!room.quizVotes[idx]) room.quizVotes[idx] = { user1: null, user2: null };
+    room.quizVotes[idx][state.user.role] = currentVote === vote ? null : vote;
+  });
+  showToast(currentVote === vote ? 'Voto retirado' : '¡Voto registrado!');
+  audio.playFlip();
+}
+
+// ===== LA RULETA DEL AMOR =====
+function renderRuletaStructure() {
+  const wheel = document.getElementById('roulette-wheel');
+  if (wheel.children.length > 0) return; // Ya renderizado
+  
+  wheel.innerHTML = '';
+  RULETA_OPTIONS.forEach((opt, i) => {
+    const angle = i * 45;
+    const el = document.createElement('div');
+    el.className = 'roulette-label';
+    el.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    el.innerHTML = `<span style="transform: rotate(0deg); display: inline-block;">${opt.text}</span>`;
+    wheel.appendChild(el);
+  });
+}
+
+function spinRoulette() {
+  const randomSpinCount = 5 + Math.floor(Math.random() * 5); // 5 a 9 vueltas
+  const targetIndex = Math.floor(Math.random() * 8);
+  // Ángulo final: 360 * vueltas + ángulo de rebanada
+  // Las rebanadas van en el sentido de las agujas del reloj, 0 es Beso, 1 es Abrazo...
+  // La aguja apunta arriba (-90 grados o 270 grados en círculo)
+  // Para que coincida con la aguja arriba, calculamos el ángulo de parada:
+  const targetAngle = randomSpinCount * 360 + (360 - (targetIndex * 45));
+  
+  updateState(room => {
+    room.currentRuleta = {
+      targetAngle,
+      selectedIndex: targetIndex,
+      spinner: state.user.name,
+      timestamp: Date.now()
+    };
+  });
+}
+
+function triggerRouletteSpinAnimation(angle, index, spinner) {
+  const wheel = document.getElementById('roulette-wheel');
+  const spinBtn = document.getElementById('spin-btn');
+  const resultEl = document.getElementById('ruleta-result');
+  
+  spinBtn.disabled = true;
+  resultEl.textContent = `🎡 ¡${spinner} está girando la ruleta...!`;
+  
+  // Aplicar rotación CSS
+  wheel.style.transform = `rotate(${angle}deg)`;
+  
+  // Sonido de clicks mecánicos con desaceleración
+  let delay = 50;
+  const playMechanicalTicks = () => {
+    if (delay > 400) return;
+    audio.playTick();
+    setTimeout(() => {
+      delay = delay * 1.14;
+      playMechanicalTicks();
+    }, delay);
+  };
+  playMechanicalTicks();
+
+  // Fin de animación (4s)
+  setTimeout(() => {
+    spinBtn.disabled = false;
+    const act = RULETA_OPTIONS[index];
+    resultEl.textContent = `✨ ¡Ruleta decidió! ${spinner} debe hacer: ${act.text}`;
+    audio.playMatch();
+    triggerEmojiExplosion('🎡');
+    showToast(`🎡 Resultado: ${act.text}`, 4000);
+  }, 4000);
+}
+
+// ===== TRES EN RAYA ROMÁNTICO =====
+function initSharedTicTacToeState(room) {
+  room.ticTacToe = {
+    board: Array(9).fill(null),
+    turn: 'user1', // Parte Gabriel
+    winner: null,
+    winningLine: null,
+    moves: 0
+  };
+}
+
+function resetTicTacToe() {
+  updateState(room => {
+    initSharedTicTacToeState(room);
+  });
+  audio.playPoke();
+}
+
+function renderSharedTicTacToe() {
+  const ttt = state.room.ticTacToe;
+  if (!ttt) return;
+
+  // Actualizar turno
+  const turnDisplay = document.getElementById('ttt-turn-display');
+  const u1Name = state.room.user1?.name || 'Gabriel';
+  const u2Name = state.room.user2?.name || 'Alexa';
+
+  if (ttt.winner) {
+    if (ttt.winner === 'draw') {
+      turnDisplay.innerHTML = `<span class="text-amber-400 font-bold">¡Empate! 🤝</span>`;
+    } else {
+      const winnerName = ttt.winner === 'user1' ? u1Name : u2Name;
+      turnDisplay.innerHTML = `<span class="text-pink-400 font-bold">🎉 ¡${winnerName} gana la partida!</span>`;
+    }
+  } else {
+    const currentName = ttt.turn === 'user1' ? u1Name : u2Name;
+    const symbol = ttt.turn === 'user1' ? '❤️' : '⭐';
+    turnDisplay.innerHTML = `Turno de: <span class="font-bold text-white">${currentName} ${symbol}</span>`;
+  }
+
+  // Render celdas
+  const boardEl = document.getElementById('ttt-board');
+  boardEl.innerHTML = '';
+  ttt.board.forEach((cell, i) => {
+    const cellEl = document.createElement('button');
+    cellEl.className = 'ttt-cell text-2xl';
+    
+    // Contenido
+    if (cell === 'user1') {
+      cellEl.innerHTML = '❤️';
+      cellEl.classList.add('taken');
+    } else if (cell === 'user2') {
+      cellEl.innerHTML = '⭐';
+      cellEl.classList.add('taken');
+    } else {
+      cellEl.innerHTML = `<span class="opacity-15 text-xs text-white/50">${i+1}</span>`;
+    }
+
+    // Ganador
+    if (ttt.winningLine && ttt.winningLine.includes(i)) {
+      cellEl.classList.add('winning');
+    }
+
+    cellEl.addEventListener('click', () => handleTicTacToeCellClick(i));
+    boardEl.appendChild(cellEl);
+  });
+}
+
+function handleTicTacToeCellClick(idx) {
+  const ttt = state.room.ticTacToe;
+  if (!ttt || ttt.winner || ttt.board[idx]) return;
+  
+  // Validar si es mi turno
+  if (state.user.role !== ttt.turn) {
+    return showToast('Es el turno de tu pareja');
+  }
+
+  audio.playFlip();
+  const prompt = TTT_CELL_PROMPTS[idx];
+  showToast(`⭐ Acción requerida: ${prompt}`, 5000);
+
+  updateState(room => {
+    const t = room.ticTacToe;
+    t.board[idx] = state.user.role;
+    t.moves++;
+
+    // Verificar ganador
+    const WIN_COMBOS = [
+      [0,1,2], [3,4,5], [6,7,8], // Filas
+      [0,3,6], [1,4,7], [2,5,8], // Columnas
+      [0,4,8], [2,4,6]           // Diagonales
+    ];
+    
+    let gameWon = false;
+    for (let combo of WIN_COMBOS) {
+      const [a,b,c] = combo;
+      if (t.board[a] && t.board[a] === t.board[b] && t.board[a] === t.board[c]) {
+        t.winner = t.board[a];
+        t.winningLine = combo;
+        gameWon = true;
+        break;
+      }
+    }
+
+    if (gameWon) {
+      setTimeout(() => {
+        audio.playMatch();
+        triggerEmojiExplosion('❤️');
+      }, 100);
+    } else if (t.moves === 9) {
+      t.winner = 'draw';
+    } else {
+      t.turn = t.turn === 'user1' ? 'user2' : 'user1'; // Cambiar turno
+    }
+  });
+}
+
+// ===== VALES DE AMOR =====
+let currentValesTab = 'gift';
+function switchValesTab(tab) {
+  currentValesTab = tab;
+  document.getElementById('vales-tab-gift').hidden = (tab !== 'gift');
+  document.getElementById('vales-tab-mine').hidden = (tab !== 'mine');
+  
+  const giftBtn = document.getElementById('btn-vales-gift');
+  const mineBtn = document.getElementById('btn-vales-mine');
+  giftBtn.classList.toggle('active', tab === 'gift');
+  mineBtn.classList.toggle('active', tab === 'mine');
+}
+
+function renderSharedCoupons() {
+  const coupons = state.room.coupons || [];
+  
+  // 1. Render Catálogo (Regalar)
+  const catalogList = document.getElementById('vales-catalog-list');
+  catalogList.innerHTML = '';
+  VALES_CATALOG.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'ticket-card p-4 flex flex-col justify-between h-[120px]';
+    el.innerHTML = `
+      <div>
+        <div class="font-display text-sm font-semibold text-amber-200 leading-tight">${item.title}</div>
+        <div class="text-[10px] text-white/50 mt-1">${item.desc}</div>
+      </div>
+      <button class="btn-primary py-1 px-3 text-[10px] self-end mt-2" onclick="giftCoupon('${item.title}')">Regalar 🎁</button>
+    `;
+    catalogList.appendChild(el);
+  });
+
+  // 2. Render Mis Vales (Recibidos y Disponibles)
+  const myList = document.getElementById('vales-my-list');
+  myList.innerHTML = '';
+  const myCoupons = coupons.filter(c => c.receiver === state.user.name && c.status === 'gifted');
+  
+  if (myCoupons.length === 0) {
+    myList.innerHTML = `
+      <div class="col-span-2 text-center py-6 text-xs text-white/30">Aún no has recibido vales. ¡Dile a tu pareja que te regale uno!</div>
+    `;
+  } else {
+    myCoupons.forEach((coupon) => {
+      const el = document.createElement('div');
+      el.className = 'ticket-card p-4 flex flex-col justify-between h-[120px] border-amber-400/40';
+      el.innerHTML = `
+        <div>
+          <div class="font-display text-sm font-bold text-amber-200 leading-tight">${coupon.title}</div>
+          <div class="text-[9px] text-white/40 mt-1">De: ${coupon.sender}</div>
+        </div>
+        <button class="btn-primary bg-gradient-to-r from-amber-500 to-amber-300 text-black py-1 px-4 text-[10px] font-bold self-end" onclick="redeemCoupon('${coupon.id}')">Canjear 🎟️</button>
+      `;
+      myList.appendChild(el);
+    });
+  }
+
+  // 3. Render Historial Canjeados
+  const historyList = document.getElementById('vales-history-list');
+  historyList.innerHTML = '';
+  const redeemed = coupons.filter(c => c.status === 'redeemed').sort((a,b) => b.redeemedTime - a.redeemedTime);
+  
+  if (redeemed.length === 0) {
+    historyList.innerHTML = `<div class="text-[10px] text-white/20 text-center py-2">Ningún vale canjeado aún</div>`;
+  } else {
+    redeemed.forEach((c) => {
+      const date = new Date(c.redeemedTime).toLocaleDateString('es-ES', {hour: '2-digit', minute:'2-digit'});
+      const el = document.createElement('div');
+      el.className = 'flex justify-between items-center border-b border-white/5 py-1';
+      el.innerHTML = `
+        <span class="font-semibold text-white/70 truncate max-w-[200px]">${c.title}</span>
+        <span class="text-[9px] text-white/30 flex-shrink-0">${c.receiver} canjeó (${date})</span>
+      `;
+      historyList.appendChild(el);
+    });
+  }
+}
+
+function giftCoupon(title) {
+  const newCoupon = {
+    id: 'c' + Date.now(),
+    title: title,
+    sender: state.user.name,
+    receiver: state.partner?.name || 'Tu pareja',
+    status: 'gifted',
+    giftedTime: Date.now()
+  };
+
+  updateState(room => {
+    if (!room.coupons) room.coupons = [];
+    room.coupons.push(newCoupon);
+  });
+  showToast(`🎁 Le regalaste un "${title}" a ${state.partner?.name || 'pareja'}`);
+  audio.playMatch();
+}
+
+function redeemCoupon(id) {
+  audio.playKiss();
+  updateState(room => {
+    const coupon = room.coupons.find(c => c.id === id);
+    if (coupon) {
+      coupon.status = 'redeemed';
+      coupon.redeemedTime = Date.now();
+    }
+  });
+  triggerEmojiExplosion('🎟️');
+  showToast(`🎟️ Has canjeado el vale. ¡A disfrutarlo!`);
+}
+
+// ===== RETOS =====
+function renderRetos() {
+  const allRetos = [...(state.room.retos || []), ...(state.room.customRetos || [])];
+  document.getElementById('retos-total').textContent = allRetos.length;
+  document.getElementById('retos-done').textContent = allRetos.filter(r => r.done).length;
+
+  const list = document.getElementById('retos-list');
+  list.innerHTML = '';
+  allRetos.forEach((reto, idx) => {
+    const el = document.createElement('div');
+    el.className = 'reto-item' + (reto.done ? ' done' : '');
+    el.innerHTML = `
+      <div class="reto-check">
+        ${reto.done ? '<i data-lucide="check" class="w-3 h-3" style="color: var(--bg)"></i>' : ''}
+      </div>
+      <div class="reto-text flex-1 text-xs font-semibold">${reto.text}</div>
+    `;
+    el.addEventListener('click', () => toggleReto(idx));
+    list.appendChild(el);
+  });
+  refreshIcons();
+}
+
+function toggleReto(index) {
+  audio.playMatch();
+  updateState(room => {
+    const defaultCount = (room.retos || []).length;
+    if (index < defaultCount) {
+      room.retos[index].done = !room.retos[index].done;
+    } else {
+      room.customRetos[index - defaultCount].done = !room.customRetos[index - defaultCount].done;
+    }
+  });
+  showToast('Lista de retos actualizada');
+}
+
+function addCustomReto() {
+  const input = document.getElementById('new-reto-input');
+  const text = input.value.trim();
+  if (!text) return showToast('Escribe algo primero');
+  updateState(room => {
+    if (!room.customRetos) room.customRetos = [];
+    room.customRetos.push({ id: 'c' + Date.now(), text, done: false });
+  });
+  input.value = '';
+  showToast('Reto personalizado añadido');
+  audio.playPoke();
+}
+
+// ===== NAVEGACIÓN Y CONFIGURACIÓN =====
+function switchSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name)?.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.section === name));
+  
+  if (name === 'memoria' && !state.room.memoryBoard) {
+    initSharedMemory();
+  }
+  
+  refreshIcons();
+}
+
+function showSurprise() {
+  const text = SURPRISES[Math.floor(Math.random() * SURPRISES.length)];
+  audio.playKiss();
+  triggerEmojiExplosion('💖');
+  showToast(text, 5000);
+}
+
+function copyKey() {
+  navigator.clipboard.writeText(state.roomKey).then(() => showToast('Código copiado. Compártelo con tu pareja'))
+  .catch(() => showToast('Código: ' + state.roomKey));
+}
+
+// ===== EVENTOS DOM =====
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Validar sesión inmediatamente antes de procesar la interfaz
+  const session = getSession();
+  if (!session || !session.user || session.key !== '230426') {
+    clearSession();
+    window.location.replace('index.html');
+    return;
+  }
+
+  refreshIcons();
+  
+  document.getElementById('logout-btn').addEventListener('click', logout);
+  document.getElementById('copy-key-btn').addEventListener('click', copyKey);
+
+  // Navegación
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => switchSection(t.dataset.section));
+  });
+  document.querySelectorAll('[data-go]').forEach(c => {
+    c.addEventListener('click', () => switchSection(c.dataset.go));
+  });
+
+  // Sorpresa y Sound Toggle
+  document.getElementById('surprise-card').addEventListener('click', showSurprise);
+  const soundBtn = document.getElementById('sound-toggle-btn');
+  const soundIcon = document.getElementById('sound-icon');
+  soundBtn.addEventListener('click', () => {
+    const isEnabled = audio.toggle();
+    if (isEnabled) {
+      soundIcon.setAttribute('data-lucide', 'volume-2');
+      soundIcon.className = "w-4 h-4 text-pink-400";
+      showToast('Sonido activado 🔊');
+    } else {
+      soundIcon.setAttribute('data-lucide', 'volume-x');
+      soundIcon.className = "w-4 h-4 text-purple-200/50";
+      showToast('Sonido silenciado 🔇');
+    }
+    refreshIcons();
+  });
+
+  // Moods
+  document.querySelectorAll('.mood-btn').forEach(b => {
+    b.addEventListener('click', () => setMood(b.dataset.mood));
+  });
+  document.getElementById('save-mood-note-btn').addEventListener('click', saveMoodNote);
+  document.getElementById('mood-note-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') saveMoodNote();
+  });
+
+  // Date Modal
+  document.getElementById('edit-date-btn').addEventListener('click', () => {
+    document.getElementById('date-input').value = state.room.startDate || '2026-04-23';
+    document.getElementById('date-modal').classList.replace('hidden', 'flex');
+  });
+  document.getElementById('date-cancel').addEventListener('click', () => {
+    document.getElementById('date-modal').classList.replace('flex', 'hidden');
+  });
+  document.getElementById('date-save').addEventListener('click', () => {
+    const date = document.getElementById('date-input').value;
+    if (date) {
+      updateState(room => { room.startDate = date; });
+      showToast('Fecha de aniversario guardada');
+    }
+    document.getElementById('date-modal').classList.replace('flex', 'hidden');
+  });
+
+  // Preguntas
+  document.getElementById('save-answer-btn').addEventListener('click', saveAnswer);
+
+  // Memoria
+  document.getElementById('mem-restart').addEventListener('click', initSharedMemory);
+
+  // Verdad o Reto
+  document.querySelectorAll('.tod-choice').forEach(b => {
+    b.addEventListener('click', () => todChoose(b.dataset.type));
+  });
+
+  // Quizzes
+  document.getElementById('quiz-vote-btn-1').addEventListener('click', () => quizVote(1));
+  document.getElementById('quiz-vote-btn-2').addEventListener('click', () => quizVote(2));
+  document.getElementById('quiz-next').addEventListener('click', () => {
+    updateState(room => { room.quizIdx = (room.quizIdx || 0) + 1; });
+  });
+
+  // Ruleta
+  document.getElementById('spin-btn').addEventListener('click', spinRoulette);
+
+  // Tres en Raya
+  document.getElementById('ttt-restart').addEventListener('click', resetTicTacToe);
+
+  // Retos
+  document.getElementById('add-reto-btn').addEventListener('click', addCustomReto);
+  document.getElementById('new-reto-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addCustomReto();
+  });
+
+  initApp();
+});
+</script>
+<div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+</body>
+</html>
