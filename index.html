@@ -1198,52 +1198,26 @@ function handleLogin(name, key) {
     return showToast('Contraseña incorrecta');
   }
 
-  const loadingScreen = document.getElementById('loading-screen');
-  loadingScreen.hidden = false;
-  
-  let tempClient = mqtt.connect(BROKER_URL);
-  let tempTopic = 'nosotros_app_ga/' + key;
-  let stateReceived = false;
+  // Cargar localmente o inicializar sala por defecto
+  let room = getLocal(key) || {
+    key,
+    startDate: '2026-04-23',
+    user1: { name: 'Gabriel', mood: null, moodNote: null, moodDate: null },
+    user2: { name: 'Alexa', mood: null, moodNote: null, moodDate: null },
+    answers: {},
+    quizVotes: {},
+    quizIdx: 0,
+    retos: DEFAULT_RETOS.map((text, i) => ({ id: 'r' + i, text, done: false })),
+    customRetos: [],
+    memoryBoard: null,
+    currentTod: null,
+    currentRuleta: null,
+    ticTacToe: null,
+    coupons: [],
+    lastUpdated: Date.now()
+  };
 
-  tempClient.on('connect', () => {
-    tempClient.subscribe(tempTopic);
-    tempClient.publish(tempTopic, JSON.stringify({ type: 'SYNC_REQ', sender: name }));
-  });
-
-  tempClient.on('message', (topic, message) => {
-    try {
-      const msg = JSON.parse(message.toString());
-      if (msg.type === 'STATE' && !stateReceived) {
-        stateReceived = true;
-        tempClient.end();
-        processAuthenticatedUser(name, key, msg.state);
-      }
-    } catch(e){}
-  });
-
-  setTimeout(() => {
-    if (!stateReceived) {
-      tempClient.end();
-      let room = getLocal(key) || {
-        key,
-        startDate: '2026-04-23',
-        user1: { name: 'Gabriel', mood: null, moodNote: null, moodDate: null },
-        user2: { name: 'Alexa', mood: null, moodNote: null, moodDate: null },
-        answers: {},
-        quizVotes: {},
-        quizIdx: 0,
-        retos: DEFAULT_RETOS.map((text, i) => ({ id: 'r' + i, text, done: false })),
-        customRetos: [],
-        memoryBoard: null,
-        currentTod: null,
-        currentRuleta: null,
-        ticTacToe: null,
-        coupons: [],
-        lastUpdated: Date.now()
-      };
-      processAuthenticatedUser(name, key, room);
-    }
-  }, 1300);
+  processAuthenticatedUser(name, key, room);
 }
 
 function processAuthenticatedUser(name, key, room) {
@@ -1265,35 +1239,14 @@ function processAuthenticatedUser(name, key, room) {
   saveLocal();
   saveSession({ name, role }, key);
   
-  let pubClient = mqtt.connect(BROKER_URL);
-  let resolved = false;
-
-  const proceed = () => {
-    if (resolved) return;
-    resolved = true;
-    pubClient.end();
-    document.getElementById('loading-screen').hidden = true;
-    document.getElementById('login-screen').hidden = true;
-    document.getElementById('app-screen').hidden = false;
-    document.getElementById('user-pill').textContent = name;
-    switchSection('dashboard');
-    connectMQTT();
-    renderAll();
-  };
-
-  pubClient.on('connect', () => {
-    pubClient.publish('nosotros_app_ga/' + key, JSON.stringify({ type: 'STATE', state: state.room }), { qos: 1, retain: true }, () => {
-      proceed();
-    });
-  });
-
-  // Si no se puede conectar en 2.5 segundos (ej: VPN activa o bloqueo de puertos), entramos en modo local
-  setTimeout(() => {
-    if (!resolved) {
-      showToast('Entrando en modo local (sin sincronización)...');
-      proceed();
-    }
-  }, 2500);
+  // Mostrar dashboard e ingresar instantáneamente
+  document.getElementById('loading-screen').hidden = true;
+  document.getElementById('login-screen').hidden = true;
+  document.getElementById('app-screen').hidden = false;
+  document.getElementById('user-pill').textContent = name;
+  switchSection('dashboard');
+  connectMQTT();
+  renderAll();
 }
 
 function autoLogin() {
