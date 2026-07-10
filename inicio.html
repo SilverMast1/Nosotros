@@ -1255,7 +1255,24 @@ const TRUTHS = [
   "¿Cuál es la mayor lección de amor o de vida que has aprendido a mi lado?",
   "¿Qué pensaste de mí después de nuestro primer beso?",
   "¿Qué es lo que más te hace sentir orgulloso/a de la pareja que formamos?",
-  "¿Si pudieras escribir el título de un libro sobre nuestra historia de amor, cuál sería?"
+  "¿Si pudieras escribir el título de un libro sobre nuestra historia de amor, cuál sería?",
+  // Nuevas verdades SPICY
+  "¿Qué fantasía secreta o atrevida te gustaría cumplir conmigo próximamente?",
+  "¿Cuál ha sido la vez que más ganas me has tenido y no pudimos hacer nada?",
+  "¿Qué parte de mi cuerpo te vuelve más loco/a en la intimidad y por qué?",
+  "¿Cuál es el pensamiento o deseo más travieso que has tenido sobre mí hoy?",
+  "¿Qué lugar inusual o arriesgado te gustaría que intentáramos para besarnos apasionadamente?",
+  "¿Qué prenda de ropa mía te gusta más cómo me queda o te parece más atractiva?",
+  "¿Qué caricia o tipo de beso mío es el que te enciende más rápido?",
+  // Nuevas verdades TONTAS y divertidas
+  "Si fueras un animal, ¿cuál serías para hacerme compañía y por qué?",
+  "¿Cuál es la canción más vergonzosa que escuchas en secreto cuando estás solo/a?",
+  "¿Qué superpoder completamente inútil te gustaría tener para usarlo en nuestra relación?",
+  "¿Cuál ha sido el momento más absurdo, gracioso o ridículo en el que has pensado en mí?",
+  "Si pudiéramos intercambiar cuerpos por un día entero, ¿qué sería lo primero que harías?",
+  "¿Cuál ha sido la caída o torpeza más graciosa que has tenido frente a mí o que recuerdes?",
+  "¿Qué apodo gracioso o ridículo en secreto te gustaría ponerme?",
+  "¿Qué caricatura o personaje animado crees que me representa mejor?"
 ];
 
 const DARES = [
@@ -1283,7 +1300,24 @@ const DARES = [
   "Dame un abrazo de oso súper fuerte que dure al menos 15 segundos",
   "Elige tres fotos bonitas de los dos en tu galería y dime qué sentías en cada una de ellas",
   "Dibuja un corazón en mi espalda con tu dedo e intenta que adivine qué más escribes",
-  "Cierra los ojos y déjame darte un beso sorpresa donde yo decida"
+  "Cierra los ojos y déjame darte un beso sorpresa donde yo decida",
+  // Nuevos retos SPICY
+  "Dale un beso apasionado de película de 15 segundos en el cuello a tu pareja",
+  "Susúrrame al oído algo muy atrevido o travieso con voz sensual",
+  "Dale un pequeño mordisco sumamente cariñoso a tu pareja en el lóbulo de la oreja",
+  "Acaricia mi pierna de forma sugerente durante 30 segundos sin reírte",
+  "Dale un beso a tu pareja en la parte del cuerpo que tú elijas (que no sea la cara ni las manos)",
+  "Quítale una prenda de ropa a tu pareja usando únicamente los dientes (¡con cuidado!)",
+  "Abraza a tu pareja por la espalda y dale besos lentos en los hombros durante un minuto",
+  // Nuevos retos TONTOS y graciosos
+  "Camina por toda la habitación imitando a un pingüino enamorado durante 20 segundos",
+  "Habla con la lengua pegada al paladar diciendo lo mucho que me quieres durante un minuto",
+  "Haz tu mejor imitación dramática de un dinosaurio feliz intentando conseguir un abrazo",
+  "Canta el coro de tu canción favorita usando únicamente la palabra 'Miau' mirándome fijamente",
+  "Intenta tocarte la nariz con la lengua mientras me dices mi mayor virtud",
+  "Haz una pasarela de modas súper ridícula y divertida con la ropa que tienes puesta",
+  "Párate en un solo pie y recita los meses del año al revés en menos de 20 segundos",
+  "Imita cómo estornuda un gato, un perro y un elefante seguidos"
 ];
 
 
@@ -2323,7 +2357,8 @@ function renderQuiz() {
   document.getElementById('quiz-result-name-1').textContent = u1Name;
   document.getElementById('quiz-result-name-2').textContent = u2Name;
 
-  const votes = state.room.quizVotes?.[idx] || { user1: null, user2: null };
+  const votesObj = state.room.quizVotes || {};
+  const votes = votesObj[idx] || { user1: null, user2: null };
   const total1 = (votes.user1 === 1 ? 1 : 0) + (votes.user2 === 1 ? 1 : 0);
   const total2 = (votes.user1 === 2 ? 1 : 0) + (votes.user2 === 2 ? 1 : 0);
   const total = total1 + total2;
@@ -2337,14 +2372,18 @@ function renderQuiz() {
   const btn2 = document.getElementById('quiz-vote-btn-2');
   btn1.classList.remove('voted'); btn2.classList.remove('voted');
 
-  const myVote = state.user.role === 'user1' ? votes.user1 : votes.user2;
-  if (myVote === 1) btn1.classList.add('voted');
-  if (myVote === 2) btn2.classList.add('voted');
+  if (state.user && state.user.role) {
+    const myVote = state.user.role === 'user1' ? votes.user1 : votes.user2;
+    if (myVote === 1) btn1.classList.add('voted');
+    if (myVote === 2) btn2.classList.add('voted');
+  }
 }
 
 function quizVote(vote) {
+  if (!state.user || !state.user.role) return;
   const idx = state.currentQuizIdx % QUIZ_QUESTIONS.length;
-  const votes = state.room.quizVotes?.[idx] || { user1: null, user2: null };
+  const votesObj = state.room.quizVotes || {};
+  const votes = votesObj[idx] || { user1: null, user2: null };
   const currentVote = votes[state.user.role];
   updateState(room => {
     if (!room.quizVotes) room.quizVotes = {};
@@ -2549,6 +2588,23 @@ function normalizeRoomState(room) {
       user1Read: true, user2Read: true,
       user1Time: 0, user2Time: 0
     };
+  }
+
+  // Normalizar quizVotes
+  if (!room.quizVotes || typeof room.quizVotes !== 'object') {
+    room.quizVotes = {};
+  } else {
+    const cleanVotes = {};
+    Object.keys(room.quizVotes).forEach(k => {
+      const v = room.quizVotes[k];
+      if (v && typeof v === 'object') {
+        cleanVotes[k] = {
+          user1: v.user1 !== undefined && v.user1 !== null ? Number(v.user1) : null,
+          user2: v.user2 !== undefined && v.user2 !== null ? Number(v.user2) : null
+        };
+      }
+    });
+    room.quizVotes = cleanVotes;
   }
 
   // Normalizar Hundir la Flota
