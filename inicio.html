@@ -1896,9 +1896,22 @@ function resetTicTacToe() {
   audio.playPoke();
 }
 
+function getTicTacToeBoard(ttt) {
+  if (!ttt || !ttt.board) return Array(9).fill(null);
+  if (Array.isArray(ttt.board)) return ttt.board;
+  const board = Array(9).fill(null);
+  for (let i = 0; i < 9; i++) {
+    if (ttt.board[i] !== undefined) {
+      board[i] = ttt.board[i];
+    }
+  }
+  return board;
+}
+
 function renderSharedTicTacToe() {
   const ttt = state.room.ticTacToe;
-  if (!ttt || !ttt.board) return;
+  if (!ttt) return;
+  const board = getTicTacToeBoard(ttt);
 
   // Actualizar turno
   const turnDisplay = document.getElementById('ttt-turn-display');
@@ -1921,7 +1934,7 @@ function renderSharedTicTacToe() {
   // Render celdas
   const boardEl = document.getElementById('ttt-board');
   boardEl.innerHTML = '';
-  ttt.board.forEach((cell, i) => {
+  board.forEach((cell, i) => {
     const cellEl = document.createElement('button');
     cellEl.className = 'ttt-cell text-2xl';
     
@@ -1948,7 +1961,9 @@ function renderSharedTicTacToe() {
 
 function handleTicTacToeCellClick(idx) {
   const ttt = state.room.ticTacToe;
-  if (!ttt || ttt.winner || ttt.board[idx]) return;
+  if (!ttt || ttt.winner) return;
+  const board = getTicTacToeBoard(ttt);
+  if (board[idx]) return;
   
   // Validar si es mi turno
   if (state.user.role !== ttt.turn) {
@@ -1961,7 +1976,9 @@ function handleTicTacToeCellClick(idx) {
 
   updateState(room => {
     const t = room.ticTacToe;
-    t.board[idx] = state.user.role;
+    const b = getTicTacToeBoard(t);
+    b[idx] = state.user.role;
+    t.board = b;
     t.moves++;
 
     // Verificar ganador
@@ -1974,8 +1991,8 @@ function handleTicTacToeCellClick(idx) {
     let gameWon = false;
     for (let combo of WIN_COMBOS) {
       const [a,b,c] = combo;
-      if (t.board[a] && t.board[a] === t.board[b] && t.board[a] === t.board[c]) {
-        t.winner = t.board[a];
+      if (b[a] && b[a] === b[b] && b[a] === b[c]) {
+        t.winner = b[a];
         t.winningLine = combo;
         gameWon = true;
         break;
