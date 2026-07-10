@@ -504,6 +504,54 @@
     background: var(--accent);
     border-color: var(--accent);
   }
+
+  /* Hundir la Flota del Amor */
+  .flota-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    aspect-ratio: 1;
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+  }
+  .flota-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #18091f 0%, #250f2e 100%);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .flota-cell:hover {
+    transform: scale(1.05);
+    background: var(--card-hover);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .flota-cell.cell-ship {
+    background: linear-gradient(135deg, rgba(255, 181, 71, 0.1) 0%, rgba(194, 95, 155, 0.1) 100%);
+    border-color: rgba(255, 181, 71, 0.4);
+    box-shadow: inset 0 0 8px rgba(255, 181, 71, 0.1);
+  }
+  .flota-cell.cell-hit {
+    background: linear-gradient(135deg, rgba(255, 74, 118, 0.2) 0%, rgba(255, 74, 118, 0.3) 100%) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent);
+    animation: pulse-hit 1.5s infinite;
+  }
+  .flota-cell.cell-miss {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    opacity: 0.5;
+  }
+  @keyframes pulse-hit {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
 </style>
 </head>
 <body>
@@ -569,6 +617,7 @@
       <button class="tab" data-section="ruleta"><i data-lucide="compass" class="w-3.5 h-3.5 text-pink-300"></i>Ruleta</button>
       <button class="tab" data-section="tresenraya"><i data-lucide="x" class="w-3.5 h-3.5 text-amber-300"></i>3 en Raya</button>
       <button class="tab" data-section="puzzle"><i data-lucide="puzzle" class="w-3.5 h-3.5 text-pink-300"></i>Rompecabezas</button>
+      <button class="tab" data-section="flota"><i data-lucide="anchor" class="w-3.5 h-3.5 text-blue-300"></i>Flota</button>
       <button class="tab" data-section="vales"><i data-lucide="ticket" class="w-3.5 h-3.5 text-purple-300"></i>Vales</button>
       <button class="tab" data-section="retos"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Retos</button>
     </div>
@@ -962,6 +1011,48 @@
         <div id="puzzle-board" class="relative bg-white/5 border border-white/10 rounded-2xl shadow-xl w-full max-w-[340px] aspect-square overflow-hidden grid gap-[2px]">
           <!-- Las piezas se colocan aquí -->
         </div>
+      </div>
+    </div>
+
+    <!-- HUNDIR LA FLOTA DEL AMOR -->
+    <div id="section-flota" class="section">
+      <div class="text-center mb-3 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <i data-lucide="anchor" class="w-6 h-6 text-blue-400"></i>
+          <span>Hundir la Flota del Amor 🚢</span>
+        </h2>
+        <div class="text-[10px] mt-0.5" style="color: var(--muted)" id="flota-status-display">Cargando juego...</div>
+      </div>
+
+      <div class="flex-1 flex flex-col md:flex-row gap-6 items-center justify-center p-2 overflow-y-auto w-full max-w-4xl mx-auto">
+        
+        <!-- MI TABLERO -->
+        <div class="glass rounded-2xl p-4 w-full max-w-[280px] flex flex-col items-center">
+          <div class="text-xs font-semibold mb-2 text-center text-purple-300">Mi Flota (Tesoros)</div>
+          <div class="flota-grid" id="flota-my-board">
+            <!-- 25 celdas -->
+          </div>
+          <div class="text-[9px] text-center mt-2" style="color: var(--muted)">Tus barcos son visibles aquí para ti.</div>
+        </div>
+
+        <!-- TABLERO ENEMIGO -->
+        <div class="glass rounded-2xl p-4 w-full max-w-[280px] flex flex-col items-center">
+          <div class="text-xs font-semibold mb-2 text-center text-pink-300" id="flota-opponent-title">Océano del Rival</div>
+          <div class="flota-grid" id="flota-opponent-board">
+            <!-- 25 celdas -->
+          </div>
+          <div class="text-[9px] text-center mt-2" style="color: var(--muted)">Dispara aquí en tu turno para buscar sus tesoros.</div>
+        </div>
+
+      </div>
+
+      <div class="text-center mt-4 flex-shrink-0 flex justify-center gap-3">
+        <button id="flota-confirm-btn" class="btn-primary py-1.5 px-4 text-xs flex items-center gap-1.5 hidden">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>Confirmar Posiciones
+        </button>
+        <button id="flota-restart" class="btn-ghost py-1.5 px-4 text-xs flex items-center gap-1.5 mx-auto">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Reiniciar Partida
+        </button>
       </div>
     </div>
 
@@ -1510,6 +1601,18 @@ function connectMQTT() {
             const partnerName = newPartnerObj?.name || 'Tu pareja';
             sendLocalNotification('Mensaje sorpresa 🎁', `¡${partnerName} te ha dejado una sorpresa!`);
           }
+
+          // E. Cambio de turno o estado en Hundir la Flota
+          const oldFlota = state.room.battleship;
+          const newFlota = remoteState.battleship;
+          if (newFlota && oldFlota) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            if (oldFlota.phase === 'placement' && newFlota.phase === 'battle') {
+              sendLocalNotification('Hundir la Flota del Amor 🚢', `¡Ambos han colocado sus barcos! ¡Comienza la batalla!`);
+            } else if (newFlota.phase === 'battle' && newFlota.turn === state.user.role && oldFlota.turn !== state.user.role && !newFlota.winner) {
+              sendLocalNotification('Hundir la Flota del Amor 🚢', `¡Es tu turno para disparar, busca los tesoros de ${partnerName}!`);
+            }
+          }
         }
 
         // D. Giro de ruleta por la pareja
@@ -1681,6 +1784,7 @@ function renderAll() {
   renderSharedSurprises();
   renderAlbumGallery();
   renderSharedPuzzle();
+  renderSharedBattleship();
   refreshIcons();
 }
 
@@ -1808,6 +1912,241 @@ function shuffleArray(array) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+// ===== HUNDIR LA FLOTA DEL AMOR =====
+function initSharedBattleship() {
+  updateState(room => {
+    room.battleship = {
+      phase: 'placement', // 'placement', 'battle', 'ended'
+      user1Ships: [],
+      user2Ships: [],
+      user1Shots: [],
+      user2Shots: [],
+      turn: 'user1',
+      winner: null
+    };
+  });
+  state.localPlacedShips = [];
+  showToast('¡Flota reiniciada! Coloca tus 3 barcos.');
+}
+
+function confirmBattleshipShips() {
+  if (!state.localPlacedShips || state.localPlacedShips.length !== 3) {
+    return showToast('Selecciona exactamente 3 celdas para tus barcos');
+  }
+
+  updateState(room => {
+    const role = state.user.role;
+    if (role === 'user1') {
+      room.battleship.user1Ships = [...state.localPlacedShips];
+    } else {
+      room.battleship.user2Ships = [...state.localPlacedShips];
+    }
+
+    if (room.battleship.user1Ships.length === 3 && room.battleship.user2Ships.length === 3) {
+      room.battleship.phase = 'battle';
+      room.battleship.turn = Math.random() < 0.5 ? 'user1' : 'user2';
+    }
+  });
+
+  state.localPlacedShips = [];
+  showToast('¡Posiciones guardadas! Esperando a tu pareja...');
+}
+
+function renderSharedBattleship() {
+  const displayStatus = document.getElementById('flota-status-display');
+  const myBoardEl = document.getElementById('flota-my-board');
+  const oppBoardEl = document.getElementById('flota-opponent-board');
+  const confirmBtn = document.getElementById('flota-confirm-btn');
+  const oppTitleEl = document.getElementById('flota-opponent-title');
+
+  if (!displayStatus || !myBoardEl || !oppBoardEl || !confirmBtn) return;
+
+  const room = state.room;
+  const flota = room.battleship;
+  if (!flota) return;
+
+  const role = state.user.role;
+  const isU1 = role === 'user1';
+  const myShips = isU1 ? flota.user1Ships : flota.user2Ships;
+  const oppShips = isU1 ? flota.user2Ships : flota.user1Ships;
+  const myShots = isU1 ? flota.user1Shots : flota.user2Shots;
+  const oppShots = isU1 ? flota.user2Shots : flota.user1Shots;
+  const partnerName = state.partner?.name || 'Tu pareja';
+
+  if (oppTitleEl) {
+    oppTitleEl.textContent = `Océano de ${partnerName}`;
+  }
+
+  if (!state.localPlacedShips) state.localPlacedShips = [];
+
+  const myConfirmed = myShips && myShips.length === 3;
+  const oppConfirmed = oppShips && oppShips.length === 3;
+
+  if (flota.phase === 'placement') {
+    if (!myConfirmed) {
+      displayStatus.innerHTML = `Coloca tus <span class="font-bold text-amber-400">3 barcos/tesoros</span> en "Mi Flota" (${state.localPlacedShips.length}/3)`;
+      if (state.localPlacedShips.length === 3) {
+        confirmBtn.classList.remove('hidden');
+      } else {
+        confirmBtn.classList.add('hidden');
+      }
+    } else {
+      confirmBtn.classList.add('hidden');
+      if (!oppConfirmed) {
+        displayStatus.innerHTML = `<span class="text-purple-300">¡Flota confirmada! Esperando que ${partnerName} coloque la suya...</span>`;
+      } else {
+        displayStatus.textContent = "Preparando batalla...";
+      }
+    }
+  } else if (flota.phase === 'battle') {
+    confirmBtn.classList.add('hidden');
+    if (flota.winner) {
+      flota.phase = 'ended';
+    } else {
+      const isMyTurn = flota.turn === role;
+      if (isMyTurn) {
+        displayStatus.innerHTML = `⭐ <span class="text-pink-400 font-bold">¡Tu Turno!</span> Dispara en el Océano de ${partnerName}.`;
+      } else {
+        displayStatus.innerHTML = `⌛ Esperando el disparo de <span class="font-bold text-purple-300">${partnerName}</span>...`;
+      }
+    }
+  }
+
+  if (flota.phase === 'ended' || flota.winner) {
+    confirmBtn.classList.add('hidden');
+    const u1Name = room.user1?.name || 'Gabriel';
+    const u2Name = room.user2?.name || 'Alexa';
+    const winnerName = flota.winner === 'user1' ? u1Name : u2Name;
+    if (flota.winner === role) {
+      displayStatus.innerHTML = `🏆 <span class="text-green-400 font-bold">¡Has ganado la batalla! 🎉</span>`;
+    } else {
+      displayStatus.innerHTML = `💔 <span class="text-pink-400 font-bold">¡${winnerName} ha ganado!</span>`;
+    }
+  }
+
+  myBoardEl.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const cell = document.createElement('button');
+    cell.className = 'flota-cell';
+    
+    const isShip = myConfirmed ? myShips.includes(i) : state.localPlacedShips.includes(i);
+    const isTargeted = oppShots && oppShots.includes(i);
+
+    if (isShip) {
+      cell.classList.add('cell-ship');
+      cell.textContent = '🚢';
+    }
+    
+    if (isTargeted) {
+      if (isShip) {
+        cell.classList.add('cell-hit');
+        cell.textContent = '💥';
+      } else {
+        cell.classList.add('cell-miss');
+        cell.textContent = '🌊';
+      }
+    }
+
+    if (flota.phase === 'placement' && !myConfirmed) {
+      cell.addEventListener('click', () => handleBattleshipCellClick(i, false));
+    }
+    
+    myBoardEl.appendChild(cell);
+  }
+
+  oppBoardEl.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const cell = document.createElement('button');
+    cell.className = 'flota-cell';
+
+    const iShot = myShots && myShots.includes(i);
+    const isOppShip = oppShips && oppShips.includes(i);
+
+    if (iShot) {
+      if (isOppShip) {
+        cell.classList.add('cell-hit');
+        cell.textContent = '❤️';
+      } else {
+        cell.classList.add('cell-miss');
+        cell.textContent = '🌊';
+      }
+    }
+
+    if (flota.phase === 'battle' && flota.turn === role && !flota.winner && !iShot) {
+      cell.addEventListener('click', () => handleBattleshipCellClick(i, true));
+    }
+
+    oppBoardEl.appendChild(cell);
+  }
+}
+
+function handleBattleshipCellClick(index, isOpponent) {
+  const role = state.user.role;
+  const flota = state.room.battleship;
+  if (!flota) return;
+
+  if (!isOpponent) {
+    if (flota.phase !== 'placement') return;
+    const isU1 = role === 'user1';
+    const confirmed = isU1 ? (flota.user1Ships && flota.user1Ships.length === 3) : (flota.user2Ships && flota.user2Ships.length === 3);
+    if (confirmed) return;
+
+    if (!state.localPlacedShips) state.localPlacedShips = [];
+    
+    const idx = state.localPlacedShips.indexOf(index);
+    if (idx !== -1) {
+      state.localPlacedShips.splice(idx, 1);
+      audio.playFlip();
+    } else {
+      if (state.localPlacedShips.length >= 3) {
+        showToast('Ya has seleccionado 3 barcos');
+        return;
+      }
+      state.localPlacedShips.push(index);
+      audio.playFlip();
+    }
+    renderSharedBattleship();
+  } else {
+    if (flota.phase !== 'battle' || flota.turn !== role || flota.winner) return;
+    
+    const isU1 = role === 'user1';
+    const myShots = isU1 ? flota.user1Shots : flota.user2Shots;
+    if (myShots.includes(index)) return;
+
+    audio.playFlip();
+
+    updateState(room => {
+      const rf = room.battleship;
+      const rRole = state.user.role;
+      const rIsU1 = rRole === 'user1';
+      const oppShipsList = rIsU1 ? rf.user2Ships : rf.user1Ships;
+      const shotsList = rIsU1 ? rf.user1Shots : rf.user2Shots;
+      
+      shotsList.push(index);
+
+      const isHit = oppShipsList.includes(index);
+      if (isHit) {
+        audio.playMatch();
+        const allSunk = oppShipsList.every(shipIdx => shotsList.includes(shipIdx));
+        if (allSunk) {
+          rf.winner = rRole;
+          rf.phase = 'ended';
+          triggerEmojiExplosion('🏆');
+          showToast('🎉 ¡HAS HUNDIDO TODA LA FLOTA RIVAL! ¡GANASTE!');
+        } else {
+          showToast('💥 ¡Tocado!');
+        }
+      } else {
+        showToast('🌊 Agua...');
+      }
+
+      if (!rf.winner) {
+        rf.turn = rRole === 'user1' ? 'user2' : 'user1';
+      }
+    });
+  }
 }
 
 // ===== MEMORIA =====
@@ -2191,6 +2530,35 @@ function normalizeRoomState(room) {
       user1Time: 0, user2Time: 0
     };
   }
+
+  // Normalizar Hundir la Flota
+  if (!room.battleship) {
+    room.battleship = {
+      phase: 'placement',
+      user1Ships: [],
+      user2Ships: [],
+      user1Shots: [],
+      user2Shots: [],
+      turn: 'user1',
+      winner: null
+    };
+  } else {
+    if (!room.battleship.user1Ships) room.battleship.user1Ships = [];
+    else if (!Array.isArray(room.battleship.user1Ships)) room.battleship.user1Ships = Object.values(room.battleship.user1Ships);
+    
+    if (!room.battleship.user2Ships) room.battleship.user2Ships = [];
+    else if (!Array.isArray(room.battleship.user2Ships)) room.battleship.user2Ships = Object.values(room.battleship.user2Ships);
+    
+    if (!room.battleship.user1Shots) room.battleship.user1Shots = [];
+    else if (!Array.isArray(room.battleship.user1Shots)) room.battleship.user1Shots = Object.values(room.battleship.user1Shots);
+    
+    if (!room.battleship.user2Shots) room.battleship.user2Shots = [];
+    else if (!Array.isArray(room.battleship.user2Shots)) room.battleship.user2Shots = Object.values(room.battleship.user2Shots);
+    
+    if (!room.battleship.phase) room.battleship.phase = 'placement';
+    if (!room.battleship.turn) room.battleship.turn = 'user1';
+    if (room.battleship.winner === undefined) room.battleship.winner = null;
+  }
   
   return room;
 }
@@ -2490,6 +2858,9 @@ function switchSection(name) {
   
   if (name === 'memoria' && !state.room.memoryBoard) {
     initSharedMemory();
+  }
+  if (name === 'flota' && !state.room.battleship) {
+    initSharedBattleship();
   }
   
   refreshIcons();
@@ -3069,6 +3440,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('puzzle-mix-btn')?.addEventListener('click', triggerPuzzleMix);
   document.getElementById('puzzle-image-select')?.addEventListener('change', updatePuzzleConfig);
   document.getElementById('puzzle-grid-select')?.addEventListener('change', updatePuzzleConfig);
+
+  // Hundir la Flota
+  document.getElementById('flota-confirm-btn')?.addEventListener('click', confirmBattleshipShips);
+  document.getElementById('flota-restart')?.addEventListener('click', initSharedBattleship);
 
   initApp();
 });
