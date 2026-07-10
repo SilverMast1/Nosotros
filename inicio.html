@@ -37,6 +37,40 @@
     display: flex;
     flex-direction: column;
   }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  @media (max-width: 768px) {
+    body {
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: auto !important;
+      min-height: 100vh;
+    }
+    #app-screen {
+      height: auto !important;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      overflow: visible !important;
+      flex: none !important;
+      padding-bottom: 80px !important;
+    }
+    .section {
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .inner-scroll {
+      overflow-y: visible !important;
+      max-height: none !important;
+    }
+  }
   .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
 
   /* Efectos de fondo */
@@ -294,6 +328,16 @@
     z-index: 10;
     filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
   }
+  @media (max-width: 380px) {
+    .roulette-container {
+      width: 250px !important;
+      height: 250px !important;
+    }
+    .roulette-label {
+      padding-left: 32px !important;
+      font-size: 8px !important;
+    }
+  }
   .roulette-center {
     position: absolute;
     inset: 38%;
@@ -383,9 +427,78 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 16px;
-    text-align: center;
-    z-index: 10;
+  }
+
+  /* Quiz / Votos */
+  .quiz-vote-btn {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .quiz-vote-btn:hover {
+    background: var(--card-hover) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  .quiz-vote-btn.voted {
+    background: linear-gradient(135deg, rgba(255, 74, 118, 0.25), rgba(255, 181, 71, 0.15)) !important;
+    border-color: var(--accent) !important;
+    transform: scale(1.03);
+    box-shadow: 0 0 15px rgba(255, 74, 118, 0.1);
+  }
+  .quiz-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .quiz-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Retos List */
+  .reto-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .reto-item:hover {
+    background: var(--card-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+  }
+  .reto-item.done {
+    background: rgba(255, 74, 118, 0.05);
+    border-color: rgba(255, 74, 118, 0.25);
+  }
+  .reto-item.done .reto-text {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: 0.75;
+  }
+  .reto-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 3, 14, 0.4);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .reto-item.done .reto-check {
+    background: var(--accent);
+    border-color: var(--accent);
   }
 </style>
 </head>
@@ -433,7 +546,7 @@
         </button>
         <button id="copy-key-btn" class="glass px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5">
           <i data-lucide="key" class="w-3 h-3 text-amber-400"></i>
-          <span class="key-mono" id="header-key">—</span>
+          <span class="key-mono hidden sm:inline" id="header-key">—</span>
           <i data-lucide="copy" class="w-2.5 h-2.5 opacity-55"></i>
         </button>
         <button id="logout-btn" class="btn-ghost text-xs py-1.5 px-2.5 flex items-center justify-center" title="Cerrar sesión"><i data-lucide="log-out" class="w-3.5 h-3.5"></i></button>
@@ -463,7 +576,7 @@
     <div id="section-dashboard" class="section active">
       <div class="h-full flex flex-col md:grid md:grid-cols-3 gap-6 overflow-y-auto md:overflow-hidden pb-4">
         <!-- COLUMNA 1: CONTADOR DE ANIVERSARIO -->
-        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[210px] md:h-full relative overflow-hidden">
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-auto min-h-[220px] md:h-full relative overflow-hidden pb-6">
           <div>
             <div class="text-[10px] uppercase tracking-widest mb-1.5" style="color: var(--muted)">Llevamos juntos</div>
             <div class="flex items-baseline gap-2 flex-wrap">
@@ -481,7 +594,7 @@
         </div>
 
         <!-- COLUMNA 2: MOOD TRACKER COMPACTO -->
-        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[280px] md:h-full">
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-auto min-h-[280px] md:h-full pb-6">
           <div>
             <div class="flex justify-between items-center mb-3">
               <div class="text-[10px] uppercase tracking-widest" style="color: var(--muted)">¿Cómo estás hoy?</div>
@@ -510,7 +623,7 @@
         </div>
 
         <!-- COLUMNA 3: ACCIONES RÁPIDAS DE AMOR Y MENSAJE DE COMPAÑÍA -->
-        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-[280px] md:h-full">
+        <div class="glass rounded-3xl p-6 flex flex-col justify-between h-auto min-h-[280px] md:h-full pb-6">
           <div>
             <div class="text-[10px] uppercase tracking-widest mb-1" style="color: var(--muted)">Mandar amor</div>
             <div class="text-base font-display mb-3">Hazle saber que estás ahí</div>
@@ -624,7 +737,7 @@
         <button class="tod-choice btn-ghost py-2 px-6 text-xs" data-type="dare" style="border-color: var(--accent-2); color: var(--accent-2)"><i data-lucide="zap" class="w-3.5 h-3.5 inline mr-1"></i>Reto</button>
       </div>
       <div class="max-w-md mx-auto w-full flex-1 flex flex-col justify-center">
-        <div id="tod-card" class="tod-card glass shadow-lg min-h-[220px]">
+        <div id="tod-card" class="tod-card glass shadow-lg min-h-[220px] p-6 flex flex-col items-center justify-center">
           <div id="tod-content" class="text-center">
             <div class="font-display text-5xl mb-3 opacity-20">?</div>
             <div class="text-xs" style="color: var(--muted)">Pulsad un botón para empezar</div>
@@ -1025,12 +1138,38 @@ function saveLocal() {
 }
 function getLocal(key) { return JSON.parse(localStorage.getItem(LOCAL_KEY + key) || 'null'); }
 
+function parseLocalDate(dateStr) {
+  if (!dateStr) return new Date();
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-based
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+  return new Date(dateStr);
+}
+
 function todayStr() { return new Date().toISOString().split('T')[0]; }
-function daysBetween(d1, d2) { return Math.floor(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)); }
+
+function daysBetween(d1, d2) {
+  const date1 = (d1 instanceof Date) ? d1 : parseLocalDate(d1);
+  const date2 = (d2 instanceof Date) ? d2 : parseLocalDate(d2);
+  const d1Copy = new Date(date1.getTime());
+  const d2Copy = new Date(date2.getTime());
+  d1Copy.setHours(0,0,0,0);
+  d2Copy.setHours(0,0,0,0);
+  return Math.round(Math.abs(d2Copy - d1Copy) / (1000 * 60 * 60 * 24));
+}
 
 function getDetailedDateBreakdown(startDateStr) {
-  const start = new Date(startDateStr + 'T00:00:00');
+  const start = parseLocalDate(startDateStr);
   const now = new Date();
+  start.setHours(0,0,0,0);
+  now.setHours(0,0,0,0);
+  
+  if (start > now) return '¡Fecha en el futuro! 🚀';
+  
   let years = now.getFullYear() - start.getFullYear();
   let months = now.getMonth() - start.getMonth();
   let days = now.getDate() - start.getDate();
@@ -1056,7 +1195,8 @@ function getDetailedDateBreakdown(startDateStr) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = parseLocalDate(dateStr);
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function questionForToday() {
@@ -1373,7 +1513,8 @@ function renderAll() {
 
 function renderDays() {
   const start = state.room.startDate || '2026-04-23';
-  document.getElementById('days-count').textContent = daysBetween(new Date(start + 'T00:00:00'), new Date());
+  const startDateObj = parseLocalDate(start);
+  document.getElementById('days-count').textContent = daysBetween(startDateObj, new Date());
   document.getElementById('start-date').textContent = formatDate(start);
   document.getElementById('date-breakdown').textContent = getDetailedDateBreakdown(start);
 }
@@ -2022,6 +2163,7 @@ function switchSection(name) {
   }
   
   refreshIcons();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function showSurprise() {
