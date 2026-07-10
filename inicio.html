@@ -662,26 +662,6 @@
           </div>
         </div>
       </div>
-      
-      <!-- NUEVA SECCIÓN: NUESTRO ÁLBUM DE FOTOS -->
-      <div class="glass rounded-3xl p-6 mt-6">
-        <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4 flex-wrap gap-2">
-          <div class="font-display text-lg flex items-center gap-2">
-            <i data-lucide="camera" class="w-5 h-5 text-pink-400"></i>
-            <span>Nuestro Álbum de Fotos 📸</span>
-          </div>
-          <div>
-            <input type="file" id="album-upload-input" accept="image/*" class="hidden">
-            <button id="album-upload-btn" class="btn-primary py-1 px-3 text-xs flex items-center gap-1.5">
-              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
-              <span>Subir Foto</span>
-            </button>
-          </div>
-        </div>
-        <div id="album-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          <div class="col-span-full text-center text-xs text-white/30 py-6" id="album-empty-text">No hay fotos en el álbum. ¡Suban su primera foto juntos! 💕</div>
-        </div>
-      </div>
     </div>
 
     <!-- PREGUNTAS CON RESPUESTAS HISTÓRICAS CON SCROLL INTERNO -->
@@ -906,7 +886,7 @@
     </div>
 
     <!-- ROMPECABEZAS COOPERATIVO -->
-    <div id="section-puzzle" class="section flex flex-col h-full overflow-hidden">
+    <div id="section-puzzle" class="section flex flex-col h-full overflow-y-auto pr-1 pb-10">
       <div class="flex items-center justify-between mb-4 flex-shrink-0 flex-wrap gap-2">
         <div>
           <h2 class="font-display text-2xl font-light flex items-center gap-2">
@@ -954,9 +934,29 @@
       </div>
 
       <!-- BOARD CONTENEDOR -->
-      <div class="flex-1 flex items-center justify-center p-2 mb-4 overflow-hidden min-h-[300px]">
+      <div class="flex flex-shrink-0 items-center justify-center p-2 mb-6 overflow-hidden min-h-[300px]">
         <div id="puzzle-board" class="relative bg-white/5 border border-white/10 rounded-2xl shadow-xl w-full max-w-[340px] aspect-square overflow-hidden grid gap-[2px]">
           <!-- Las piezas se colocan aquí -->
+        </div>
+      </div>
+
+      <!-- NUESTRA GALERÍA / ÁLBUM DE FOTOS -->
+      <div class="glass rounded-3xl p-6 mt-2 flex-shrink-0">
+        <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4 flex-wrap gap-2">
+          <div class="font-display text-lg flex items-center gap-2">
+            <i data-lucide="camera" class="w-5 h-5 text-pink-400"></i>
+            <span>Nuestro Álbum de Fotos 📸</span>
+          </div>
+          <div>
+            <input type="file" id="album-upload-input" accept="image/*" class="hidden">
+            <button id="album-upload-btn" class="btn-primary py-1 px-3 text-xs flex items-center gap-1.5">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Subir Foto</span>
+            </button>
+          </div>
+        </div>
+        <div id="album-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div class="col-span-full text-center text-xs text-white/30 py-6" id="album-empty-text">No hay fotos en el álbum. ¡Suban su primera foto juntos! 💕</div>
         </div>
       </div>
     </div>
