@@ -1348,7 +1348,7 @@ function connectMQTT() {
           sendLocalNotification('La Ruleta del Amor 🎡', `¡${remoteState.currentRuleta.spinner} está girando la ruleta!`);
         }
 
-        state.room = remoteState;
+        state.room = normalizeRoomState(remoteState);
         state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
         state.partner = state.user.role === 'user1' ? state.room.user2 : state.room.user1;
         state.currentQuizIdx = state.room.quizIdx || 0;
@@ -1397,6 +1397,7 @@ function connectMQTT() {
 function updateState(updaterFunction) {
   if (!state.room) return;
   updaterFunction(state.room);
+  state.room = normalizeRoomState(state.room);
   state.room.lastUpdated = Date.now();
   saveLocal();
   if (roomRef) {
@@ -1453,7 +1454,7 @@ function initApp() {
   
   state.user = session.user;
   state.roomKey = session.key;
-  state.room = room;
+  state.room = normalizeRoomState(room);
 
   // Inicializaciones preventivas en el estado si la sala fue creada vieja o está incompleta en LocalStorage
   if (!state.room.user1) state.room.user1 = { name: 'Gabriel', mood: null, moodNote: null, moodDate: null };
@@ -1906,6 +1907,31 @@ function getTicTacToeBoard(ttt) {
     }
   }
   return board;
+}
+
+function normalizeRoomState(room) {
+  if (!room) return room;
+  
+  if (room.retos && !Array.isArray(room.retos)) {
+    room.retos = Object.values(room.retos);
+  }
+  if (room.customRetos && !Array.isArray(room.customRetos)) {
+    room.customRetos = Object.values(room.customRetos);
+  }
+  if (room.coupons && !Array.isArray(room.coupons)) {
+    room.coupons = Object.values(room.coupons);
+  }
+  if (room.memoryBoard && room.memoryBoard.cards && !Array.isArray(room.memoryBoard.cards)) {
+    room.memoryBoard.cards = Object.values(room.memoryBoard.cards);
+  }
+  if (room.memoryBoard && room.memoryBoard.flippedIndices && !Array.isArray(room.memoryBoard.flippedIndices)) {
+    room.memoryBoard.flippedIndices = Object.values(room.memoryBoard.flippedIndices);
+  }
+  if (room.ticTacToe && room.ticTacToe.board) {
+    room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
+  }
+  
+  return room;
 }
 
 function renderSharedTicTacToe() {
