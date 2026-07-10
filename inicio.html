@@ -1988,12 +1988,12 @@ function resetTicTacToe() {
 }
 
 function getTicTacToeBoard(ttt) {
-  if (!ttt || !ttt.board) return Array(9).fill(null);
-  if (Array.isArray(ttt.board)) return ttt.board;
   const board = Array(9).fill(null);
-  for (let i = 0; i < 9; i++) {
-    if (ttt.board[i] !== undefined) {
-      board[i] = ttt.board[i];
+  if (ttt && ttt.board) {
+    for (let i = 0; i < 9; i++) {
+      if (ttt.board[i] !== undefined && ttt.board[i] !== null && ttt.board[i] !== "") {
+        board[i] = ttt.board[i];
+      }
     }
   }
   return board;
@@ -2002,21 +2002,47 @@ function getTicTacToeBoard(ttt) {
 function normalizeRoomState(room) {
   if (!room) return room;
   
-  if (room.retos && !Array.isArray(room.retos)) {
+  // Normalizar retos
+  if (!room.retos) {
+    room.retos = [];
+  } else if (!Array.isArray(room.retos)) {
     room.retos = Object.values(room.retos);
   }
-  if (room.customRetos && !Array.isArray(room.customRetos)) {
+  
+  // Normalizar retos personalizados
+  if (!room.customRetos) {
+    room.customRetos = [];
+  } else if (!Array.isArray(room.customRetos)) {
     room.customRetos = Object.values(room.customRetos);
   }
-  if (room.coupons && !Array.isArray(room.coupons)) {
+  
+  // Normalizar vales/cupones
+  if (!room.coupons) {
+    room.coupons = [];
+  } else if (!Array.isArray(room.coupons)) {
     room.coupons = Object.values(room.coupons);
   }
-  if (room.memoryBoard && room.memoryBoard.cards && !Array.isArray(room.memoryBoard.cards)) {
-    room.memoryBoard.cards = Object.values(room.memoryBoard.cards);
+  
+  // Normalizar memorama
+  if (room.memoryBoard) {
+    if (!room.memoryBoard.cards) {
+      room.memoryBoard.cards = [];
+    } else if (!Array.isArray(room.memoryBoard.cards)) {
+      room.memoryBoard.cards = Object.values(room.memoryBoard.cards);
+    }
+    
+    if (!room.memoryBoard.flippedIndices) {
+      room.memoryBoard.flippedIndices = [];
+    } else if (!Array.isArray(room.memoryBoard.flippedIndices)) {
+      room.memoryBoard.flippedIndices = Object.values(room.memoryBoard.flippedIndices);
+    }
+    
+    if (room.memoryBoard.moves === undefined || isNaN(room.memoryBoard.moves)) room.memoryBoard.moves = 0;
+    if (room.memoryBoard.pairs === undefined || isNaN(room.memoryBoard.pairs)) room.memoryBoard.pairs = 0;
+    if (room.memoryBoard.lock === undefined) room.memoryBoard.lock = false;
   }
-  if (room.memoryBoard && room.memoryBoard.flippedIndices && !Array.isArray(room.memoryBoard.flippedIndices)) {
-    room.memoryBoard.flippedIndices = Object.values(room.memoryBoard.flippedIndices);
-  }
+  
+  // Normalizar Tres en Raya
   if (!room.ticTacToe) {
     room.ticTacToe = {
       board: Array(9).fill(null),
@@ -2026,15 +2052,14 @@ function normalizeRoomState(room) {
       moves: 0
     };
   } else {
-    if (!room.ticTacToe.board) room.ticTacToe.board = Array(9).fill(null);
-    else room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
+    room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
     if (!room.ticTacToe.turn) room.ticTacToe.turn = 'user1';
     if (room.ticTacToe.winner === undefined) room.ticTacToe.winner = null;
     if (room.ticTacToe.winningLine === undefined) room.ticTacToe.winningLine = null;
-    if (room.ticTacToe.moves === undefined || isNaN(room.ticTacToe.moves)) {
-      room.ticTacToe.moves = room.ticTacToe.board.filter(c => c === 'user1' || c === 'user2').length;
-    }
+    room.ticTacToe.moves = room.ticTacToe.board.filter(c => c === 'user1' || c === 'user2').length;
   }
+  
+  // Normalizar mensajes sorpresa
   if (!room.surpriseMessages) {
     room.surpriseMessages = {
       user1Msg: "", user2Msg: "",
