@@ -646,12 +646,18 @@
               </div>
             </div>
           </div>
-          <div class="glass rounded-2xl p-3 cursor-pointer hover:bg-white/5 flex items-center gap-2 mt-4" id="surprise-card">
-            <i data-lucide="sparkles" class="w-4 h-4 flex-shrink-0 text-amber-300"></i>
-            <div>
-              <div class="text-xs font-semibold">Mensaje sorpresa</div>
-              <div class="text-[10px]" style="color: var(--muted)">Toca para abrir</div>
+          <div class="glass rounded-2xl p-3 cursor-pointer hover:bg-white/5 flex items-center justify-between mt-4" id="surprise-card">
+            <div class="flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 flex-shrink-0 text-amber-300"></i>
+              <div>
+                <div class="text-xs font-semibold flex items-center gap-1.5">
+                  <span>Mensaje sorpresa</span>
+                  <span id="surprise-badge" class="w-2 h-2 rounded-full bg-pink-500 animate-ping hidden"></span>
+                </div>
+                <div class="text-[10px]" style="color: var(--muted)" id="surprise-card-desc">Toca para escribir o leer</div>
+              </div>
             </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
           </div>
         </div>
       </div>
@@ -892,6 +898,44 @@
     <div class="flex gap-2">
       <button id="date-cancel" class="btn-ghost flex-1 py-2 text-xs">Cancelar</button>
       <button id="date-save" class="btn-primary flex-1 py-2 text-xs">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MENSAJE SORPRESA -->
+<div id="surprise-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
+  <div class="glass rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-fadeIn flex flex-col gap-4">
+    <div class="flex justify-between items-center border-b border-white/5 pb-3">
+      <div class="font-display text-xl flex items-center gap-2">
+        <i data-lucide="gift" class="w-5 h-5 text-pink-400"></i>
+        <span>Mensaje Sorpresa</span>
+      </div>
+      <button id="surprise-close" class="btn-ghost p-1 px-2.5 rounded-lg text-xs">✕</button>
+    </div>
+    
+    <!-- LEER MENSAJE RECIBIDO -->
+    <div id="surprise-read-section" class="bg-white/5 border border-white/10 rounded-2xl p-4 text-center hidden">
+      <div class="text-[10px] uppercase tracking-widest mb-2 font-semibold text-pink-300">Mensaje de <span id="surprise-partner-name">—</span></div>
+      <!-- CONTENEDOR CERRADO (TOCA PARA ABRIR) -->
+      <div id="surprise-box-closed" class="py-4 cursor-pointer hover:scale-105 transition-transform flex flex-col items-center gap-2">
+        <span class="text-4xl">🎁</span>
+        <span class="text-xs font-semibold text-white">¡Toca el regalo para abrir!</span>
+      </div>
+      <!-- CONTENEDOR ABIERTO -->
+      <div id="surprise-box-opened" class="hidden">
+        <div class="font-display text-base italic text-white/90 leading-relaxed mb-2" id="surprise-received-text"></div>
+        <div class="text-[9px] text-white/30" id="surprise-received-time">Hace un momento</div>
+      </div>
+    </div>
+    
+    <!-- ESCRIBIR MENSAJE PARA LA PAREJA -->
+    <div>
+      <div class="text-[10px] uppercase tracking-widest mb-2 font-semibold text-amber-300">Enviar sorpresa a <span id="surprise-target-name">—</span></div>
+      <textarea id="surprise-input" class="input resize-none h-[90px] text-xs mb-3 font-medium" placeholder="Escribe un mensaje bonito para tu pareja..."></textarea>
+      <button id="surprise-send-btn" class="btn-primary w-full py-2 text-xs flex items-center justify-center gap-1.5">
+        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        <span>Guardar Mensaje</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1341,6 +1385,15 @@ function connectMQTT() {
             const partnerName = newPartnerObj?.name || 'Tu pareja';
             sendLocalNotification('Tres en Raya 🎮', `¡Es tu turno para jugar con ${partnerName}!`);
           }
+
+          // D. Mensajes sorpresa nuevos
+          const oldSurprises = state.room.surpriseMessages || {};
+          const newSurprises = remoteState.surpriseMessages || {};
+          const partnerMsgKey = state.user.role === 'user1' ? 'user2Msg' : 'user1Msg';
+          if (newSurprises[partnerMsgKey] !== oldSurprises[partnerMsgKey] && newSurprises[partnerMsgKey]) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Mensaje sorpresa 🎁', `¡${partnerName} te ha dejado una sorpresa!`);
+          }
         }
 
         // D. Giro de ruleta por la pareja
@@ -1509,6 +1562,7 @@ function renderAll() {
   renderRuletaStructure();
   renderSharedTicTacToe();
   renderSharedCoupons();
+  renderSharedSurprises();
   refreshIcons();
 }
 
@@ -1930,6 +1984,13 @@ function normalizeRoomState(room) {
   if (room.ticTacToe && room.ticTacToe.board) {
     room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
   }
+  if (!room.surpriseMessages) {
+    room.surpriseMessages = {
+      user1Msg: "", user2Msg: "",
+      user1Read: true, user2Read: true,
+      user1Time: 0, user2Time: 0
+    };
+  }
   
   return room;
 }
@@ -2156,14 +2217,26 @@ function renderRetos() {
   list.innerHTML = '';
   allRetos.forEach((reto, idx) => {
     const el = document.createElement('div');
-    el.className = 'reto-item' + (reto.done ? ' done' : '');
+    el.className = 'reto-item' + (reto.done ? ' done' : '') + ' flex justify-between items-center';
     el.innerHTML = `
-      <div class="reto-check">
-        ${reto.done ? '<i data-lucide="check" class="w-3 h-3" style="color: var(--bg)"></i>' : ''}
+      <div class="flex items-center gap-3 flex-1 min-w-0" id="reto-click-area-${idx}">
+        <div class="reto-check">
+          ${reto.done ? '<i data-lucide="check" class="w-3 h-3" style="color: var(--bg)"></i>' : ''}
+        </div>
+        <div class="reto-text flex-1 text-xs font-semibold truncate">${reto.text}</div>
       </div>
-      <div class="reto-text flex-1 text-xs font-semibold">${reto.text}</div>
+      <button class="delete-reto-btn p-1.5 hover:bg-white/10 rounded-lg text-purple-200/50 hover:text-red-400 transition-colors flex-shrink-0" title="Eliminar reto" id="reto-delete-btn-${idx}">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+      </button>
     `;
-    el.addEventListener('click', () => toggleReto(idx));
+    
+    el.querySelector(`#reto-click-area-${idx}`).addEventListener('click', () => toggleReto(idx));
+    
+    el.querySelector(`#reto-delete-btn-${idx}`).addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteReto(idx);
+    });
+    
     list.appendChild(el);
   });
   refreshIcons();
@@ -2209,11 +2282,146 @@ function switchSection(name) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function showSurprise() {
-  const text = SURPRISES[Math.floor(Math.random() * SURPRISES.length)];
+// ===== MENSAJE SORPRESA PERSONALIZADO =====
+function renderSharedSurprises() {
+  const surprises = state.room.surpriseMessages || {
+    user1Msg: "", user2Msg: "",
+    user1Read: true, user2Read: true,
+    user1Time: 0, user2Time: 0
+  };
+  
+  const isU1 = state.user.role === 'user1';
+  const receivedMsg = isU1 ? surprises.user2Msg : surprises.user1Msg;
+  const isReceivedRead = isU1 ? surprises.user1Read : surprises.user2Read;
+  
+  const badge = document.getElementById('surprise-badge');
+  const cardDesc = document.getElementById('surprise-card-desc');
+  
+  if (receivedMsg && !isReceivedRead) {
+    if (badge) badge.classList.remove('hidden');
+    if (cardDesc) {
+      cardDesc.textContent = "¡Tienes un mensaje nuevo! 🎁";
+      cardDesc.className = "text-[10px] text-pink-300 font-semibold animate-pulse";
+    }
+  } else {
+    if (badge) badge.classList.add('hidden');
+    if (cardDesc) {
+      cardDesc.textContent = "Toca para escribir o leer";
+      cardDesc.className = "text-[10px] text-purple-200/50";
+    }
+  }
+}
+
+function openSurpriseModal() {
+  const surprises = state.room.surpriseMessages || {
+    user1Msg: "", user2Msg: "",
+    user1Read: true, user2Read: true,
+    user1Time: 0, user2Time: 0
+  };
+  
+  const isU1 = state.user.role === 'user1';
+  const myMsg = isU1 ? surprises.user1Msg : surprises.user2Msg;
+  const receivedMsg = isU1 ? surprises.user2Msg : surprises.user1Msg;
+  const isReceivedRead = isU1 ? surprises.user1Read : surprises.user2Read;
+  const receivedTime = isU1 ? surprises.user2Time : surprises.user1Time;
+  
+  const partnerName = state.partner ? state.partner.name : 'tu pareja';
+  document.getElementById('surprise-partner-name').textContent = partnerName;
+  document.getElementById('surprise-target-name').textContent = partnerName;
+  
+  document.getElementById('surprise-input').value = myMsg || "";
+  
+  const readSection = document.getElementById('surprise-read-section');
+  if (receivedMsg) {
+    readSection.classList.remove('hidden');
+    const closedBox = document.getElementById('surprise-box-closed');
+    const openedBox = document.getElementById('surprise-box-opened');
+    
+    if (isReceivedRead) {
+      closedBox.classList.add('hidden');
+      openedBox.classList.remove('hidden');
+      document.getElementById('surprise-received-text').textContent = receivedMsg;
+      
+      const timeStr = receivedTime ? new Date(receivedTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 'recientemente';
+      document.getElementById('surprise-received-time').textContent = `Recibido a las ${timeStr}`;
+    } else {
+      closedBox.classList.remove('hidden');
+      openedBox.classList.add('hidden');
+    }
+  } else {
+    readSection.classList.add('hidden');
+  }
+  
+  document.getElementById('surprise-modal').classList.replace('hidden', 'flex');
+  refreshIcons();
+}
+
+function closeSurpriseModal() {
+  document.getElementById('surprise-modal').classList.replace('flex', 'hidden');
+}
+
+function revealSurprise() {
   audio.playKiss();
   triggerEmojiExplosion('💖');
-  showToast(text, 5000);
+  
+  const closedBox = document.getElementById('surprise-box-closed');
+  const openedBox = document.getElementById('surprise-box-opened');
+  
+  closedBox.classList.add('hidden');
+  openedBox.classList.remove('hidden');
+  
+  const surprises = state.room.surpriseMessages || {};
+  const isU1 = state.user.role === 'user1';
+  const receivedMsg = isU1 ? surprises.user2Msg : surprises.user1Msg;
+  const receivedTime = isU1 ? surprises.user2Time : surprises.user1Time;
+  
+  document.getElementById('surprise-received-text').textContent = receivedMsg;
+  const timeStr = receivedTime ? new Date(receivedTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 'recientemente';
+  document.getElementById('surprise-received-time').textContent = `Recibido a las ${timeStr}`;
+  
+  updateState(room => {
+    if (!room.surpriseMessages) room.surpriseMessages = {};
+    if (state.user.role === 'user1') {
+      room.surpriseMessages.user1Read = true;
+    } else {
+      room.surpriseMessages.user2Read = true;
+    }
+  });
+}
+
+function saveSurpriseMsg() {
+  const text = document.getElementById('surprise-input').value.trim();
+  if (!text) return showToast('Escribe algo primero');
+  
+  updateState(room => {
+    if (!room.surpriseMessages) room.surpriseMessages = {};
+    if (state.user.role === 'user1') {
+      room.surpriseMessages.user1Msg = text;
+      room.surpriseMessages.user2Read = false;
+      room.surpriseMessages.user1Time = Date.now();
+    } else {
+      room.surpriseMessages.user2Msg = text;
+      room.surpriseMessages.user1Read = false;
+      room.surpriseMessages.user2Time = Date.now();
+    }
+  });
+  showToast('¡Mensaje sorpresa guardado! 🎁');
+  audio.playPoke();
+  closeSurpriseModal();
+}
+
+// ===== ELIMINAR RETO =====
+function deleteReto(index) {
+  updateState(room => {
+    const defaultCount = (room.retos || []).length;
+    if (index < defaultCount) {
+      room.retos.splice(index, 1);
+    } else {
+      room.customRetos.splice(index - defaultCount, 1);
+    }
+  });
+  showToast('Reto eliminado');
+  audio.playPoke();
 }
 
 function copyKey() {
@@ -2272,7 +2480,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Sorpresa y Sound Toggle
-  document.getElementById('surprise-card').addEventListener('click', showSurprise);
+  document.getElementById('surprise-card').addEventListener('click', openSurpriseModal);
+  document.getElementById('surprise-close').addEventListener('click', closeSurpriseModal);
+  document.getElementById('surprise-box-closed').addEventListener('click', revealSurprise);
+  document.getElementById('surprise-send-btn').addEventListener('click', saveSurpriseMsg);
   const soundBtn = document.getElementById('sound-toggle-btn');
   const soundIcon = document.getElementById('sound-icon');
   soundBtn.addEventListener('click', () => {
