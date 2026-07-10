@@ -1937,14 +1937,19 @@ function confirmBattleshipShips() {
   }
 
   updateState(room => {
-    const role = state.user.role;
+    if (!room.battleship) {
+      room.battleship = { phase: 'placement', user1Ships: [], user2Ships: [], user1Shots: [], user2Shots: [], turn: 'user1', winner: null };
+    }
+    const role = state.user?.role || 'user1';
     if (role === 'user1') {
       room.battleship.user1Ships = [...state.localPlacedShips];
     } else {
       room.battleship.user2Ships = [...state.localPlacedShips];
     }
 
-    if (room.battleship.user1Ships.length === 3 && room.battleship.user2Ships.length === 3) {
+    const u1Ships = room.battleship.user1Ships || [];
+    const u2Ships = room.battleship.user2Ships || [];
+    if (u1Ships.length === 3 && u2Ships.length === 3) {
       room.battleship.phase = 'battle';
       room.battleship.turn = Math.random() < 0.5 ? 'user1' : 'user2';
     }
@@ -1964,15 +1969,19 @@ function renderSharedBattleship() {
   if (!displayStatus || !myBoardEl || !oppBoardEl || !confirmBtn) return;
 
   const room = state.room;
+  if (!room) return;
+  
   const flota = room.battleship;
   if (!flota) return;
 
+  if (!state.user || !state.user.role) return;
   const role = state.user.role;
   const isU1 = role === 'user1';
-  const myShips = isU1 ? flota.user1Ships : flota.user2Ships;
-  const oppShips = isU1 ? flota.user2Ships : flota.user1Ships;
-  const myShots = isU1 ? flota.user1Shots : flota.user2Shots;
-  const oppShots = isU1 ? flota.user2Shots : flota.user1Shots;
+  
+  const myShips = (isU1 ? flota.user1Ships : flota.user2Ships) || [];
+  const oppShips = (isU1 ? flota.user2Ships : flota.user1Ships) || [];
+  const myShots = (isU1 ? flota.user1Shots : flota.user2Shots) || [];
+  const oppShots = (isU1 ? flota.user2Shots : flota.user1Shots) || [];
   const partnerName = state.partner?.name || 'Tu pareja';
 
   if (oppTitleEl) {
@@ -1981,10 +1990,13 @@ function renderSharedBattleship() {
 
   if (!state.localPlacedShips) state.localPlacedShips = [];
 
-  const myConfirmed = myShips && myShips.length === 3;
-  const oppConfirmed = oppShips && oppShips.length === 3;
+  const myConfirmed = myShips.length === 3;
+  const oppConfirmed = oppShips.length === 3;
+  const phase = flota.phase || 'placement';
+  const turn = flota.turn || 'user1';
+  const winner = flota.winner || null;
 
-  if (flota.phase === 'placement') {
+  if (phase === 'placement') {
     if (!myConfirmed) {
       displayStatus.innerHTML = `Coloca tus <span class="font-bold text-amber-400">3 barcos/tesoros</span> en "Mi Flota" (${state.localPlacedShips.length}/3)`;
       if (state.localPlacedShips.length === 3) {
@@ -2000,12 +2012,12 @@ function renderSharedBattleship() {
         displayStatus.textContent = "Preparando batalla...";
       }
     }
-  } else if (flota.phase === 'battle') {
+  } else if (phase === 'battle') {
     confirmBtn.classList.add('hidden');
-    if (flota.winner) {
-      flota.phase = 'ended';
+    if (winner) {
+      // Si hay ganador, se trata en el siguiente bloque
     } else {
-      const isMyTurn = flota.turn === role;
+      const isMyTurn = turn === role;
       if (isMyTurn) {
         displayStatus.innerHTML = `⭐ <span class="text-pink-400 font-bold">¡Tu Turno!</span> Dispara en el Océano de ${partnerName}.`;
       } else {
@@ -2014,12 +2026,12 @@ function renderSharedBattleship() {
     }
   }
 
-  if (flota.phase === 'ended' || flota.winner) {
+  if (phase === 'ended' || winner) {
     confirmBtn.classList.add('hidden');
     const u1Name = room.user1?.name || 'Gabriel';
     const u2Name = room.user2?.name || 'Alexa';
-    const winnerName = flota.winner === 'user1' ? u1Name : u2Name;
-    if (flota.winner === role) {
+    const winnerName = winner === 'user1' ? u1Name : u2Name;
+    if (winner === role) {
       displayStatus.innerHTML = `🏆 <span class="text-green-400 font-bold">¡Has ganado la batalla! 🎉</span>`;
     } else {
       displayStatus.innerHTML = `💔 <span class="text-pink-400 font-bold">¡${winnerName} ha ganado!</span>`;
@@ -2032,7 +2044,7 @@ function renderSharedBattleship() {
     cell.className = 'flota-cell';
     
     const isShip = myConfirmed ? myShips.includes(i) : state.localPlacedShips.includes(i);
-    const isTargeted = oppShots && oppShots.includes(i);
+    const isTargeted = oppShots.includes(i);
 
     if (isShip) {
       cell.classList.add('cell-ship');
@@ -2049,7 +2061,7 @@ function renderSharedBattleship() {
       }
     }
 
-    if (flota.phase === 'placement' && !myConfirmed) {
+    if (phase === 'placement' && !myConfirmed) {
       cell.addEventListener('click', () => handleBattleshipCellClick(i, false));
     }
     
@@ -2061,8 +2073,8 @@ function renderSharedBattleship() {
     const cell = document.createElement('button');
     cell.className = 'flota-cell';
 
-    const iShot = myShots && myShots.includes(i);
-    const isOppShip = oppShips && oppShips.includes(i);
+    const iShot = myShots.includes(i);
+    const isOppShip = oppShips.includes(i);
 
     if (iShot) {
       if (isOppShip) {
@@ -2074,7 +2086,7 @@ function renderSharedBattleship() {
       }
     }
 
-    if (flota.phase === 'battle' && flota.turn === role && !flota.winner && !iShot) {
+    if (phase === 'battle' && turn === role && !winner && !iShot) {
       cell.addEventListener('click', () => handleBattleshipCellClick(i, true));
     }
 
@@ -2083,14 +2095,22 @@ function renderSharedBattleship() {
 }
 
 function handleBattleshipCellClick(index, isOpponent) {
+  if (!state.user || !state.user.role) return;
   const role = state.user.role;
-  const flota = state.room.battleship;
+  const room = state.room;
+  if (!room) return;
+  const flota = room.battleship;
   if (!flota) return;
 
+  const phase = flota.phase || 'placement';
+  const turn = flota.turn || 'user1';
+  const winner = flota.winner || null;
+
   if (!isOpponent) {
-    if (flota.phase !== 'placement') return;
+    if (phase !== 'placement') return;
     const isU1 = role === 'user1';
-    const confirmed = isU1 ? (flota.user1Ships && flota.user1Ships.length === 3) : (flota.user2Ships && flota.user2Ships.length === 3);
+    const myShips = isU1 ? flota.user1Ships : flota.user2Ships;
+    const confirmed = myShips && myShips.length === 3;
     if (confirmed) return;
 
     if (!state.localPlacedShips) state.localPlacedShips = [];
@@ -2109,10 +2129,10 @@ function handleBattleshipCellClick(index, isOpponent) {
     }
     renderSharedBattleship();
   } else {
-    if (flota.phase !== 'battle' || flota.turn !== role || flota.winner) return;
+    if (phase !== 'battle' || turn !== role || winner) return;
     
     const isU1 = role === 'user1';
-    const myShots = isU1 ? flota.user1Shots : flota.user2Shots;
+    const myShots = (isU1 ? flota.user1Shots : flota.user2Shots) || [];
     if (myShots.includes(index)) return;
 
     audio.playFlip();
@@ -2532,7 +2552,7 @@ function normalizeRoomState(room) {
   }
 
   // Normalizar Hundir la Flota
-  if (!room.battleship) {
+  if (!room.battleship || typeof room.battleship !== 'object') {
     room.battleship = {
       phase: 'placement',
       user1Ships: [],
@@ -2543,17 +2563,16 @@ function normalizeRoomState(room) {
       winner: null
     };
   } else {
-    if (!room.battleship.user1Ships) room.battleship.user1Ships = [];
-    else if (!Array.isArray(room.battleship.user1Ships)) room.battleship.user1Ships = Object.values(room.battleship.user1Ships);
-    
-    if (!room.battleship.user2Ships) room.battleship.user2Ships = [];
-    else if (!Array.isArray(room.battleship.user2Ships)) room.battleship.user2Ships = Object.values(room.battleship.user2Ships);
-    
-    if (!room.battleship.user1Shots) room.battleship.user1Shots = [];
-    else if (!Array.isArray(room.battleship.user1Shots)) room.battleship.user1Shots = Object.values(room.battleship.user1Shots);
-    
-    if (!room.battleship.user2Shots) room.battleship.user2Shots = [];
-    else if (!Array.isArray(room.battleship.user2Shots)) room.battleship.user2Shots = Object.values(room.battleship.user2Shots);
+    const toNumericArray = (val) => {
+      if (!val) return [];
+      const arr = Array.isArray(val) ? val : Object.values(val);
+      return arr.map(Number).filter(n => !isNaN(n));
+    };
+
+    room.battleship.user1Ships = toNumericArray(room.battleship.user1Ships);
+    room.battleship.user2Ships = toNumericArray(room.battleship.user2Ships);
+    room.battleship.user1Shots = toNumericArray(room.battleship.user1Shots);
+    room.battleship.user2Shots = toNumericArray(room.battleship.user2Shots);
     
     if (!room.battleship.phase) room.battleship.phase = 'placement';
     if (!room.battleship.turn) room.battleship.turn = 'user1';
