@@ -2167,9 +2167,9 @@ function handleTicTacToeCellClick(idx) {
     
     let gameWon = false;
     for (let combo of WIN_COMBOS) {
-      const [a,b,c] = combo;
-      if (b[a] && b[a] === b[b] && b[a] === b[c]) {
-        t.winner = b[a];
+      const [idxA, idxB, idxC] = combo;
+      if (b[idxA] && b[idxA] === b[idxB] && b[idxA] === b[idxC]) {
+        t.winner = b[idxA];
         t.winningLine = combo;
         gameWon = true;
         break;
