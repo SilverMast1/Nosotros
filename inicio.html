@@ -1718,13 +1718,25 @@ function saveAnswer() {
 }
 
 // ===== MEMORIA =====
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ===== MEMORIA =====
 function initSharedMemory() {
-  const shuffledPool = [...MEMORY_EMOJIS].sort(() => 0.5 - Math.random());
+  const shuffledPool = shuffleArray(MEMORY_EMOJIS);
   const selectedEmojis = shuffledPool.slice(0, 8);
-  const emojis = [...selectedEmojis, ...selectedEmojis].map(e => ({ e, r: Math.random() })).sort((a,b) => a.r - b.r);
+  const doubleEmojis = [...selectedEmojis, ...selectedEmojis];
+  const shuffledEmojis = shuffleArray(doubleEmojis);
+  
   updateState(room => {
     room.memoryBoard = {
-      cards: emojis.map((c, i) => ({ id: i, emoji: c.e, status: 'closed' })),
+      cards: shuffledEmojis.map((emoji, i) => ({ id: i, emoji: emoji, status: 'closed' })),
       flippedIndices: [], moves: 0, pairs: 0, lock: false
     };
   });
@@ -2137,6 +2149,8 @@ function handleTicTacToeCellClick(idx) {
   const prompt = TTT_CELL_PROMPTS[idx];
   showToast(`⭐ Acción requerida: ${prompt}`, 5000);
 
+  let triggerReset = false;
+
   updateState(room => {
     const t = room.ticTacToe;
     const b = getTicTacToeBoard(t);
@@ -2167,12 +2181,24 @@ function handleTicTacToeCellClick(idx) {
         audio.playMatch();
         triggerEmojiExplosion('❤️');
       }, 100);
+      triggerReset = true;
     } else if (t.moves === 9) {
       t.winner = 'draw';
+      triggerReset = true;
     } else {
       t.turn = t.turn === 'user1' ? 'user2' : 'user1'; // Cambiar turno
     }
   });
+
+  if (triggerReset) {
+    setTimeout(() => {
+      const currentTTT = state.room?.ticTacToe;
+      if (currentTTT && currentTTT.winner) {
+        resetTicTacToe();
+        showToast('¡Nueva partida iniciada! 🎮');
+      }
+    }, 4500);
+  }
 }
 
 // ===== VALES DE AMOR =====
