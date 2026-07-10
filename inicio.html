@@ -1169,7 +1169,7 @@ const SURPRISES = [
   "Eres la persona por la que sonrío mirando la pantalla del móvil."
 ];
 
-const MEMORY_EMOJIS = ['💗', '🌹', '💑', '💍', '🍫', '🌙', '☕', '🎵'];
+const MEMORY_EMOJIS = ['💗', '🌹', '💑', '💍', '🍫', '🌙', '☕', '🎵', '🧸', '💌', '🧁', '🍕', '🐱', '🐶', '✈️', '🍿', '🎈', '🎡', '🥂', '🌠'];
 
 const RULETA_OPTIONS = [
   { text: "💋 Un beso largo", key: "beso" },
@@ -1385,7 +1385,7 @@ function connectMQTT() {
 
     const remoteState = snapshot.val();
     if (remoteState) {
-      if (!state.room || (remoteState.lastUpdated || 0) > (state.room.lastUpdated || 0)) {
+      if (!state.room || remoteState.lastUpdated !== state.room.lastUpdated) {
         const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
         const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
         
@@ -1719,7 +1719,9 @@ function saveAnswer() {
 
 // ===== MEMORIA =====
 function initSharedMemory() {
-  const emojis = [...MEMORY_EMOJIS, ...MEMORY_EMOJIS].map(e => ({ e, r: Math.random() })).sort((a,b) => a.r - b.r);
+  const shuffledPool = [...MEMORY_EMOJIS].sort(() => 0.5 - Math.random());
+  const selectedEmojis = shuffledPool.slice(0, 8);
+  const emojis = [...selectedEmojis, ...selectedEmojis].map(e => ({ e, r: Math.random() })).sort((a,b) => a.r - b.r);
   updateState(room => {
     room.memoryBoard = {
       cards: emojis.map((c, i) => ({ id: i, emoji: c.e, status: 'closed' })),
@@ -1916,13 +1918,12 @@ function renderRuletaStructure() {
 }
 
 function spinRoulette() {
-  const randomSpinCount = 5 + Math.floor(Math.random() * 5); // 5 a 9 vueltas
+  const randomSpinCount = 5 + Math.floor(Math.random() * 5);
   const targetIndex = Math.floor(Math.random() * 8);
-  // Ángulo final: 360 * vueltas + ángulo de rebanada
-  // Las rebanadas van en el sentido de las agujas del reloj, 0 es Beso, 1 es Abrazo...
-  // La aguja apunta arriba (-90 grados o 270 grados en círculo)
-  // Para que coincida con la aguja arriba, calculamos el ángulo de parada:
-  const targetAngle = randomSpinCount * 360 + (360 - (targetIndex * 45));
+  
+  const prevAngle = state.room.currentRuleta?.targetAngle || 0;
+  const currentBase = prevAngle - (prevAngle % 360);
+  const targetAngle = currentBase + (randomSpinCount * 360) + (360 - (targetIndex * 45));
   
   updateState(room => {
     room.currentRuleta = {
@@ -2016,8 +2017,23 @@ function normalizeRoomState(room) {
   if (room.memoryBoard && room.memoryBoard.flippedIndices && !Array.isArray(room.memoryBoard.flippedIndices)) {
     room.memoryBoard.flippedIndices = Object.values(room.memoryBoard.flippedIndices);
   }
-  if (room.ticTacToe && room.ticTacToe.board) {
-    room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
+  if (!room.ticTacToe) {
+    room.ticTacToe = {
+      board: Array(9).fill(null),
+      turn: 'user1',
+      winner: null,
+      winningLine: null,
+      moves: 0
+    };
+  } else {
+    if (!room.ticTacToe.board) room.ticTacToe.board = Array(9).fill(null);
+    else room.ticTacToe.board = getTicTacToeBoard(room.ticTacToe);
+    if (!room.ticTacToe.turn) room.ticTacToe.turn = 'user1';
+    if (room.ticTacToe.winner === undefined) room.ticTacToe.winner = null;
+    if (room.ticTacToe.winningLine === undefined) room.ticTacToe.winningLine = null;
+    if (room.ticTacToe.moves === undefined || isNaN(room.ticTacToe.moves)) {
+      room.ticTacToe.moves = room.ticTacToe.board.filter(c => c === 'user1' || c === 'user2').length;
+    }
   }
   if (!room.surpriseMessages) {
     room.surpriseMessages = {
@@ -2101,7 +2117,7 @@ function handleTicTacToeCellClick(idx) {
     const b = getTicTacToeBoard(t);
     b[idx] = state.user.role;
     t.board = b;
-    t.moves++;
+    t.moves = b.filter(c => c === 'user1' || c === 'user2').length;
 
     // Verificar ganador
     const WIN_COMBOS = [
