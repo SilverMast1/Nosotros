@@ -564,6 +564,7 @@
       <button class="tab" data-section="quiz"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>¿Quién?</button>
       <button class="tab" data-section="ruleta"><i data-lucide="compass" class="w-3.5 h-3.5 text-pink-300"></i>Ruleta</button>
       <button class="tab" data-section="tresenraya"><i data-lucide="x" class="w-3.5 h-3.5 text-amber-300"></i>3 en Raya</button>
+      <button class="tab" data-section="puzzle"><i data-lucide="puzzle" class="w-3.5 h-3.5 text-pink-300"></i>Rompecabezas</button>
       <button class="tab" data-section="vales"><i data-lucide="ticket" class="w-3.5 h-3.5 text-purple-300"></i>Vales</button>
       <button class="tab" data-section="retos"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Retos</button>
     </div>
@@ -572,9 +573,9 @@
   <!-- CONTENEDOR DE SECCIONES PRINCIPAL (CON ALTURA AJUSTADA Y SIN SCROLL VERTICAL GENERAL) -->
   <main class="max-w-6xl mx-auto px-6 py-5 flex-1 w-full overflow-hidden relative">
     
-    <!-- DASHBOARD (INICIO) CON DISEÑO COMPACTO Y ADAPTATIVO SIN SCROLL EN ESCRITORIO -->
-    <div id="section-dashboard" class="section active">
-      <div class="h-full flex flex-col md:grid md:grid-cols-3 gap-6 overflow-y-auto md:overflow-hidden pb-4">
+    <!-- DASHBOARD (INICIO) CON DISEÑO COMPACTO Y ADAPTATIVO CON SCROLL FLUIDO -->
+    <div id="section-dashboard" class="section active overflow-y-auto h-full pr-1 pb-10">
+      <div class="flex flex-col md:grid md:grid-cols-3 gap-6 mb-6">
         <!-- COLUMNA 1: CONTADOR DE ANIVERSARIO -->
         <div class="glass rounded-3xl p-6 flex flex-col justify-between h-auto min-h-[220px] md:h-full relative overflow-hidden pb-6">
           <div>
@@ -659,6 +660,26 @@
             </div>
             <i data-lucide="chevron-right" class="w-4 h-4 opacity-50"></i>
           </div>
+        </div>
+      </div>
+      
+      <!-- NUEVA SECCIÓN: NUESTRO ÁLBUM DE FOTOS -->
+      <div class="glass rounded-3xl p-6 mt-6">
+        <div class="flex justify-between items-center border-b border-white/5 pb-3 mb-4 flex-wrap gap-2">
+          <div class="font-display text-lg flex items-center gap-2">
+            <i data-lucide="camera" class="w-5 h-5 text-pink-400"></i>
+            <span>Nuestro Álbum de Fotos 📸</span>
+          </div>
+          <div>
+            <input type="file" id="album-upload-input" accept="image/*" class="hidden">
+            <button id="album-upload-btn" class="btn-primary py-1 px-3 text-xs flex items-center gap-1.5">
+              <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+              <span>Subir Foto</span>
+            </button>
+          </div>
+        </div>
+        <div id="album-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div class="col-span-full text-center text-xs text-white/30 py-6" id="album-empty-text">No hay fotos en el álbum. ¡Suban su primera foto juntos! 💕</div>
         </div>
       </div>
     </div>
@@ -880,6 +901,62 @@
         <div class="flex gap-2">
           <input id="new-reto-input" type="text" class="input py-2 text-xs" placeholder="Escribe algo bonito...">
           <button id="add-reto-btn" class="btn-primary py-2 px-4"><i data-lucide="plus" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROMPECABEZAS COOPERATIVO -->
+    <div id="section-puzzle" class="section flex flex-col h-full overflow-hidden">
+      <div class="flex items-center justify-between mb-4 flex-shrink-0 flex-wrap gap-2">
+        <div>
+          <h2 class="font-display text-2xl font-light flex items-center gap-2">
+            <i data-lucide="puzzle" class="w-6 h-6 text-pink-400"></i>
+            <span>Rompecabezas de Amor 🧩</span>
+          </h2>
+          <p class="text-[10px] text-purple-200/50">Resuelvan el rompecabezas juntos en tiempo real</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="puzzle-mix-btn" class="btn-primary py-1.5 px-3 text-xs flex items-center gap-1.5">
+            <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+            <span>Mezclar</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- CONTROLES -->
+      <div class="glass rounded-2xl p-4 mb-4 flex-shrink-0 flex flex-wrap gap-4 items-center justify-between">
+        <!-- Seleccionar imagen -->
+        <div class="flex flex-col gap-1 flex-1 min-w-[150px]">
+          <span class="text-[9px] uppercase tracking-widest font-semibold text-purple-200/50">Elegir Foto</span>
+          <select id="puzzle-image-select" class="input py-1 px-2 text-xs h-8">
+            <option value="default">Foto por Defecto (Amor)</option>
+          </select>
+        </div>
+        <!-- Dificultad -->
+        <div class="flex flex-col gap-1">
+          <span class="text-[9px] uppercase tracking-widest font-semibold text-purple-200/50">Cuadrícula</span>
+          <select id="puzzle-grid-select" class="input py-1 px-2 text-xs h-8">
+            <option value="3">3 x 3 (Fácil)</option>
+            <option value="4">4 x 4 (Normal)</option>
+          </select>
+        </div>
+        <!-- Stats -->
+        <div class="flex gap-4">
+          <div class="text-center">
+            <div class="text-[9px] uppercase tracking-widest font-semibold text-purple-200/50">Movimientos</div>
+            <div id="puzzle-moves" class="text-sm font-semibold text-pink-400">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[9px] uppercase tracking-widest font-semibold text-purple-200/50">Estado</div>
+            <div id="puzzle-status-text" class="text-xs font-semibold text-green-400">Jugando</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOARD CONTENEDOR -->
+      <div class="flex-1 flex items-center justify-center p-2 mb-4 overflow-hidden min-h-[300px]">
+        <div id="puzzle-board" class="relative bg-white/5 border border-white/10 rounded-2xl shadow-xl w-full max-w-[340px] aspect-square overflow-hidden grid gap-[2px]">
+          <!-- Las piezas se colocan aquí -->
         </div>
       </div>
     </div>
@@ -1598,6 +1675,8 @@ function renderAll() {
   renderSharedTicTacToe();
   renderSharedCoupons();
   renderSharedSurprises();
+  renderAlbumGallery();
+  renderSharedPuzzle();
   refreshIcons();
 }
 
@@ -2071,6 +2150,35 @@ function normalizeRoomState(room) {
     room.ticTacToe.moves = room.ticTacToe.board.filter(c => c === 'user1' || c === 'user2').length;
   }
   
+  // Normalizar fotos del álbum
+  if (!room.photos) {
+    room.photos = [];
+  } else if (!Array.isArray(room.photos)) {
+    room.photos = Object.values(room.photos);
+  }
+  
+  // Normalizar rompecabezas
+  if (!room.puzzleBoard) {
+    room.puzzleBoard = {
+      imageType: "default",
+      gridSize: 3,
+      pieces: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      moves: 0,
+      completed: false
+    };
+  } else {
+    if (!room.puzzleBoard.pieces) {
+      const gSize = room.puzzleBoard.gridSize || 3;
+      room.puzzleBoard.pieces = Array.from({ length: gSize * gSize }, (_, i) => i);
+    } else if (!Array.isArray(room.puzzleBoard.pieces)) {
+      room.puzzleBoard.pieces = Object.values(room.puzzleBoard.pieces);
+    }
+    if (!room.puzzleBoard.imageType) room.puzzleBoard.imageType = "default";
+    if (!room.puzzleBoard.gridSize) room.puzzleBoard.gridSize = 3;
+    if (room.puzzleBoard.moves === undefined || isNaN(room.puzzleBoard.moves)) room.puzzleBoard.moves = 0;
+    if (room.puzzleBoard.completed === undefined) room.puzzleBoard.completed = false;
+  }
+
   // Normalizar mensajes sorpresa
   if (!room.surpriseMessages) {
     room.surpriseMessages = {
@@ -2526,6 +2634,290 @@ function deleteReto(index) {
   audio.playPoke();
 }
 
+// ===== ÁLBUM DE FOTOS =====
+function compressAndUploadPhoto(file) {
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxW = 600;
+      const scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
+      
+      updateState(room => {
+        if (!room.photos) room.photos = [];
+        room.photos.push({
+          id: 'photo_' + Date.now(),
+          src: compressedBase64,
+          uploader: state.user.name,
+          timestamp: Date.now()
+        });
+      });
+      showToast('¡Foto subida con éxito! 📸');
+      audio.playPoke();
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteAlbumPhoto(photoId) {
+  if (!confirm('¿Estás seguro de que quieres eliminar esta foto del álbum?')) return;
+  updateState(room => {
+    if (room.photos) {
+      room.photos = room.photos.filter(p => p.id !== photoId);
+    }
+    // Si la foto eliminada estaba seleccionada en el rompecabezas, resetear a default
+    if (room.puzzleBoard && room.puzzleBoard.imageType === photoId) {
+      room.puzzleBoard.imageType = 'default';
+      room.puzzleBoard.pieces = Array.from({ length: room.puzzleBoard.gridSize * room.puzzleBoard.gridSize }, (_, i) => i);
+      room.puzzleBoard.moves = 0;
+      room.puzzleBoard.completed = false;
+    }
+  });
+  showToast('Foto eliminada 📸');
+  audio.playPoke();
+}
+
+function renderAlbumGallery() {
+  const photos = state.room.photos || [];
+  const galleryEl = document.getElementById('album-gallery');
+  const emptyEl = document.getElementById('album-empty-text');
+  
+  if (!galleryEl || !emptyEl) return;
+  
+  if (photos.length === 0) {
+    emptyEl.classList.remove('hidden');
+    galleryEl.innerHTML = '';
+    galleryEl.appendChild(emptyEl);
+  } else {
+    emptyEl.classList.add('hidden');
+    galleryEl.innerHTML = '';
+    
+    photos.forEach(photo => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'relative group aspect-square rounded-2xl overflow-hidden border border-white/5 shadow-md hover:scale-[1.02] transition-transform duration-300';
+      itemEl.innerHTML = `
+        <img src="${photo.src}" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <button class="p-2 bg-red-500/80 hover:bg-red-600 rounded-xl text-white transition-colors" onclick="deleteAlbumPhoto('${photo.id}')" title="Eliminar de mi álbum">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `;
+      galleryEl.appendChild(itemEl);
+    });
+    refreshIcons();
+  }
+  updatePuzzleImageOptions();
+}
+
+// ===== ROMPECABEZAS COOPERATIVO =====
+function updatePuzzleImageOptions() {
+  const select = document.getElementById('puzzle-image-select');
+  if (!select) return;
+  
+  const curVal = select.value;
+  select.innerHTML = `<option value="default">Foto por Defecto (Amor)</option>`;
+  
+  const photos = state.room.photos || [];
+  photos.forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `Foto de Álbum #${i+1}`;
+    select.appendChild(opt);
+  });
+  
+  if (Array.from(select.options).some(o => o.value === curVal)) {
+    select.value = curVal;
+  } else {
+    select.value = 'default';
+  }
+}
+
+function shufflePuzzleBoard(gridSize) {
+  const total = gridSize * gridSize;
+  const pieces = [];
+  for (let i = 0; i < total; i++) {
+    pieces.push(i);
+  }
+  
+  let emptyIdx = total - 1;
+  for (let m = 0; m < 80; m++) {
+    const validNeighbors = [];
+    const emptyRow = Math.floor(emptyIdx / gridSize);
+    const emptyCol = emptyIdx % gridSize;
+    
+    if (emptyRow > 0) validNeighbors.push(emptyIdx - gridSize);
+    if (emptyRow < gridSize - 1) validNeighbors.push(emptyIdx + gridSize);
+    if (emptyCol > 0) validNeighbors.push(emptyIdx - 1);
+    if (emptyCol < gridSize - 1) validNeighbors.push(emptyIdx + 1);
+    
+    const chosenIdx = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+    [pieces[emptyIdx], pieces[chosenIdx]] = [pieces[chosenIdx], pieces[emptyIdx]];
+    emptyIdx = chosenIdx;
+  }
+  return pieces;
+}
+
+function renderSharedPuzzle() {
+  const pb = state.room.puzzleBoard;
+  if (!pb) return;
+  
+  const boardEl = document.getElementById('puzzle-board');
+  const select = document.getElementById('puzzle-image-select');
+  const gridSelect = document.getElementById('puzzle-grid-select');
+  const movesEl = document.getElementById('puzzle-moves');
+  const statusEl = document.getElementById('puzzle-status-text');
+  
+  if (!boardEl || !select || !gridSelect || !movesEl || !statusEl) return;
+  
+  if (select.value !== pb.imageType) select.value = pb.imageType;
+  if (parseInt(gridSelect.value) !== pb.gridSize) gridSelect.value = pb.gridSize;
+  
+  movesEl.textContent = pb.moves;
+  if (pb.completed) {
+    statusEl.textContent = "🏆 ¡Completado!";
+    statusEl.className = "text-xs font-semibold text-pink-400 animate-bounce";
+  } else {
+    statusEl.textContent = "Jugando";
+    statusEl.className = "text-xs font-semibold text-green-400";
+  }
+  
+  let imgUrl = "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=600&auto=format&fit=crop";
+  if (pb.imageType !== 'default' && state.room.photos) {
+    const selectedPhoto = state.room.photos.find(p => p.id === pb.imageType);
+    if (selectedPhoto) imgUrl = selectedPhoto.src;
+  }
+  
+  const gridSize = pb.gridSize;
+  const pieces = pb.pieces || [];
+  const total = gridSize * gridSize;
+  
+  boardEl.innerHTML = '';
+  boardEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+  
+  pieces.forEach((pieceId, currentIdx) => {
+    const pieceEl = document.createElement('div');
+    pieceEl.className = 'w-full h-full relative cursor-pointer select-none transition-all duration-200 border border-white/5';
+    
+    const emptyPieceId = total - 1;
+    
+    if (pieceId === emptyPieceId) {
+      pieceEl.className = 'w-full h-full bg-white/5 border border-dashed border-white/10';
+    } else {
+      const correctRow = Math.floor(pieceId / gridSize);
+      const correctCol = pieceId % gridSize;
+      const pctX = (correctCol / (gridSize - 1)) * 100;
+      const pctY = (correctRow / (gridSize - 1)) * 100;
+      
+      pieceEl.style.backgroundImage = `url(${imgUrl})`;
+      pieceEl.style.backgroundSize = `${gridSize * 100}% ${gridSize * 100}%`;
+      pieceEl.style.backgroundPosition = `${pctX}% ${pctY}%`;
+      
+      const numLabel = document.createElement('span');
+      numLabel.className = 'absolute bottom-1 right-1 text-[8px] bg-black/40 text-white/50 px-1 rounded opacity-0 hover:opacity-100 transition-opacity';
+      numLabel.textContent = pieceId + 1;
+      pieceEl.appendChild(numLabel);
+    }
+    
+    pieceEl.addEventListener('click', () => handlePuzzlePieceClick(currentIdx));
+    boardEl.appendChild(pieceEl);
+  });
+}
+
+function handlePuzzlePieceClick(clickedIdx) {
+  const pb = state.room.puzzleBoard;
+  if (!pb || pb.completed) return;
+  
+  const gridSize = pb.gridSize;
+  const pieces = [...(pb.pieces || [])];
+  const total = gridSize * gridSize;
+  const emptyPieceId = total - 1;
+  
+  const emptyIdx = pieces.indexOf(emptyPieceId);
+  const clickedRow = Math.floor(clickedIdx / gridSize);
+  const clickedCol = clickedIdx % gridSize;
+  const emptyRow = Math.floor(emptyIdx / gridSize);
+  const emptyCol = emptyIdx % gridSize;
+  
+  const isAdjacent = (Math.abs(clickedRow - emptyRow) + Math.abs(clickedCol - emptyCol)) === 1;
+  if (!isAdjacent) return;
+  
+  audio.playFlip();
+  
+  updateState(room => {
+    const p = room.puzzleBoard;
+    const piecesArr = [...(p.pieces || [])];
+    const empIdx = piecesArr.indexOf(emptyPieceId);
+    
+    [piecesArr[clickedIdx], piecesArr[empIdx]] = [piecesArr[empIdx], piecesArr[clickedIdx]];
+    p.pieces = piecesArr;
+    p.moves = (p.moves || 0) + 1;
+    
+    let isSolved = true;
+    for (let i = 0; i < total; i++) {
+      if (piecesArr[i] !== i) {
+        isSolved = false;
+        break;
+      }
+    }
+    
+    if (isSolved) {
+      p.completed = true;
+      setTimeout(() => {
+        audio.playMatch();
+        triggerEmojiExplosion('🎉');
+        showToast('¡Rompecabezas completado! 💖🏆');
+      }, 100);
+    }
+  });
+}
+
+function updatePuzzleConfig() {
+  const select = document.getElementById('puzzle-image-select');
+  const gridSelect = document.getElementById('puzzle-grid-select');
+  if (!select || !gridSelect) return;
+  
+  const imageType = select.value;
+  const gridSize = parseInt(gridSelect.value);
+  
+  updateState(room => {
+    room.puzzleBoard = {
+      imageType,
+      gridSize,
+      pieces: Array.from({ length: gridSize * gridSize }, (_, i) => i),
+      moves: 0,
+      completed: false
+    };
+  });
+}
+
+function triggerPuzzleMix() {
+  const pb = state.room.puzzleBoard;
+  if (!pb) return;
+  
+  const gridSize = pb.gridSize;
+  const shuffledPieces = shufflePuzzleBoard(gridSize);
+  
+  updateState(room => {
+    room.puzzleBoard.pieces = shuffledPieces;
+    room.puzzleBoard.moves = 0;
+    room.puzzleBoard.completed = false;
+  });
+  
+  showToast('¡Rompecabezas mezclado! 🧩');
+  audio.playPoke();
+}
+
 function copyKey() {
   navigator.clipboard.writeText(state.roomKey).then(() => showToast('Código copiado. Compártelo con tu pareja'))
   .catch(() => showToast('Código: ' + state.roomKey));
@@ -2657,6 +3049,22 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('new-reto-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addCustomReto();
   });
+
+  // Álbum de Fotos
+  const fileInput = document.getElementById('album-upload-input');
+  const uploadBtn = document.getElementById('album-upload-btn');
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) compressAndUploadPhoto(file);
+    });
+  }
+
+  // Rompecabezas
+  document.getElementById('puzzle-mix-btn')?.addEventListener('click', triggerPuzzleMix);
+  document.getElementById('puzzle-image-select')?.addEventListener('change', updatePuzzleConfig);
+  document.getElementById('puzzle-grid-select')?.addEventListener('change', updatePuzzleConfig);
 
   initApp();
 });
