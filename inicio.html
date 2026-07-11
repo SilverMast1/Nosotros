@@ -12,6 +12,7 @@
 <!-- SDK de Firebase (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
 <style>
   :root {
@@ -1077,7 +1078,7 @@
 <!-- MODAL CONFIGURACIÓN NOTIFICACIONES -->
 <div id="notif-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
   <div class="glass rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fadeIn flex flex-col gap-4 max-h-[90vh] overflow-y-auto inner-scroll">
-    <div class="flex justify-between items-center border-b border-white/5 pb-3">
+    <div class="flex justify-between items-center border-b border-white/5 pb-2">
       <div class="font-display text-xl flex items-center gap-2">
         <i data-lucide="bell" class="w-5 h-5 text-pink-400"></i>
         <span>Notificaciones del Espacio</span>
@@ -1085,12 +1086,12 @@
       <button id="notif-close" onclick="closeNotifModal()" class="btn-ghost p-1 px-2.5 rounded-lg text-xs">✕</button>
     </div>
     
-    <!-- NOTIFICACIONES AL CELULAR -->
+    <!-- NOTIFICACIONES AUTOMÁTICAS AL CELULAR -->
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-sm font-semibold text-white">Notificaciones en el Celular</h3>
-          <p class="text-[10px] text-white/50">Recibe avisos al instante en tu celular vía ntfy.</p>
+          <p class="text-[10px] text-white/50">Nativas, automáticas y sin instalar aplicaciones.</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" id="mobile-notif-toggle" class="sr-only peer" onchange="toggleMobileNotifications(this.checked)">
@@ -1100,37 +1101,48 @@
 
       <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN -->
       <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
+        <!-- PASO 1: INGRESAR CREDENCIALES DE FIREBASE -->
         <div>
-          <span class="font-semibold text-amber-200">Paso 1:</span> Descarga la app <strong class="text-white">ntfy</strong> en tu celular:
-          <div class="flex gap-2 mt-2">
-            <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" class="btn-ghost py-1.5 px-3 rounded-xl text-[10px] flex items-center gap-1.5 flex-1 justify-center">
-              <i data-lucide="play" class="w-3 h-3 text-green-400"></i> Google Play
-            </a>
-            <a href="https://apps.apple.com/app/ntfy-push-notifications/id1625396347" target="_blank" class="btn-ghost py-1.5 px-3 rounded-xl text-[10px] flex items-center gap-1.5 flex-1 justify-center">
-              <i data-lucide="apple" class="w-3 h-3 text-blue-400"></i> App Store
-            </a>
+          <span class="font-semibold text-amber-200">Paso 1:</span> Ingresar credenciales Web Push de tu Firebase:
+          <div class="flex flex-col gap-2 mt-2">
+            <div>
+              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Clave Pública VAPID</label>
+              <input id="vapid-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: BEl3yK-...">
+            </div>
+            <div>
+              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Clave del Servidor (Server Key Legacy)</label>
+              <input id="server-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: AAAA...">
+            </div>
+            <button onclick="saveFcmCredentials()" class="btn-primary py-1.5 text-[10px] mt-1 flex items-center justify-center gap-1.5">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar Credenciales
+            </button>
           </div>
         </div>
 
+        <!-- PASO 2: SUSCRIBIR EL DISPOSITIVO -->
         <div class="border-t border-white/5 pt-3">
-          <span class="font-semibold text-amber-200">Paso 2:</span> Abre la app, presiona <strong class="text-white">+</strong> (Suscribirse a tema) e ingresa tu canal:
-          <div class="flex items-center gap-2 mt-2">
-            <input id="my-notif-topic" type="text" readonly class="input py-1.5 px-3 text-[11px] font-mono text-pink-300 bg-black/40" value="">
-            <button onclick="copyNotifTopic()" class="btn-ghost py-1.5 px-2.5 rounded-xl flex items-center justify-center shrink-0" title="Copiar canal">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span class="font-semibold text-amber-200">Paso 2:</span> Activar notificaciones en este celular:
+          <div class="flex flex-col gap-2 mt-2">
+            <button onclick="subscribeThisDevice()" class="btn-ghost py-2 px-3 text-[10px] flex items-center justify-center gap-1.5 border-pink-500/20 hover:border-pink-500 text-pink-300">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 🔔 Suscribir este Celular
             </button>
+            <div id="device-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
+            <div id="partner-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
           </div>
-          <p class="text-[9px] text-white/40 mt-1 italic">Cada uno se suscribe a su propio canal para recibir las acciones del otro.</p>
+          <p class="text-[8.5px] text-white/40 mt-2 leading-relaxed">
+            <strong>Nota para iPhone (iOS):</strong> Primero abre la página en Safari, presiona <strong>Compartir</strong> y dale a <strong>"Agregar a pantalla de inicio"</strong>. Luego abre esa app instalada y actívalas allí.
+          </p>
         </div>
 
+        <!-- PASO 3: PRUEBA -->
         <div class="border-t border-white/5 pt-3 flex flex-col gap-2">
-          <span class="font-semibold text-amber-200">Paso 3:</span> Comprueba que funciona:
+          <span class="font-semibold text-amber-200">Paso 3:</span> Enviar notificación de prueba:
           <div class="flex gap-2">
-            <button onclick="sendTestNotificationToSelf()" class="btn-primary py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1">
-              <i data-lucide="bell" class="w-3 h-3"></i> Probar mi Celular
+            <button onclick="sendTestNotificationToSelf()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1">
+              Probar mi Celular
             </button>
-            <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1 border-pink-500/30 hover:border-pink-500 text-pink-300">
-              <i data-lucide="heart" class="w-3 h-3"></i> Probar Pareja
+            <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1 border-pink-500/10 text-pink-300 hover:border-pink-500/30">
+              Probar Pareja
             </button>
           </div>
         </div>
@@ -1143,7 +1155,7 @@
     <div class="flex flex-col gap-2">
       <h3 class="text-sm font-semibold text-white">Notificaciones del Navegador (Locales)</h3>
       <p class="text-[10px] text-white/50">Solo funcionan cuando tienes esta página web abierta.</p>
-      <div class="flex items-center justify-between gap-3 mt-1.5">
+      <div class="flex items-center justify-between gap-3 mt-1">
         <span id="browser-notif-status" class="text-xs text-purple-200/60">—</span>
         <button id="browser-notif-btn" onclick="requestBrowserNotificationPermission()" class="btn-ghost py-1.5 px-3 text-[10px] hidden">Activar</button>
       </div>
@@ -1634,27 +1646,129 @@ function sendLocalNotification(title, body) {
   }
 }
 
-// ===== NOTIFICACIONES MÓVILES (ntfy.sh) =====
+// ===== NOTIFICACIONES MÓVILES (FCM NATIVAS) =====
+function registerFCM() {
+  if (!state.room || !state.room.notificationsConfig) return;
+  const config = state.room.notificationsConfig;
+  
+  if (!config.enabled || !config.vapidKey) {
+    console.log('FCM Registration skipped: disabled or no VAPID Key.');
+    return;
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('firebase-messaging-sw.js')
+      .then((registration) => {
+        console.log('Service Worker registrado con éxito:', registration);
+        
+        try {
+          const messaging = firebase.messaging();
+          // Intentar obtener el token de FCM
+          messaging.getToken({ 
+            vapidKey: config.vapidKey,
+            serviceWorkerRegistration: registration
+          })
+          .then((currentToken) => {
+            if (currentToken) {
+              console.log('Token FCM obtenido:', currentToken);
+              // Guardar token en Firebase Database para este usuario
+              const tokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
+              if (config[tokenKey] !== currentToken) {
+                updateState(room => {
+                  room.notificationsConfig[tokenKey] = currentToken;
+                });
+              }
+            } else {
+              console.warn('No se pudo obtener el token. Pide permiso.');
+            }
+          })
+          .catch((err) => {
+            console.error('Error al obtener el token FCM:', err);
+          });
+        } catch (e) {
+          console.error('Error al inicializar Firebase Messaging:', e);
+        }
+      })
+      .catch((err) => {
+        console.error('Fallo al registrar el Service Worker:', err);
+      });
+  }
+}
+
+function subscribeThisDevice() {
+  if (!state.room || !state.room.notificationsConfig) return showToast('Configuración no disponible');
+  const config = state.room.notificationsConfig;
+  if (!config.vapidKey || !config.serverKey) {
+    return showToast('Primero debes guardar la Clave VAPID y la Clave del Servidor');
+  }
+
+  if (typeof Notification === 'undefined') {
+    return showToast('Este navegador no soporta notificaciones de escritorio');
+  }
+
+  Notification.requestPermission().then((permission) => {
+    updateNotifIcon();
+    renderNotifModalContents();
+    if (permission === 'granted') {
+      showToast('Permiso concedido. Obteniendo token...');
+      registerFCM();
+    } else {
+      showToast('Permiso denegado 🔕');
+    }
+  });
+}
+
+function saveFcmCredentials() {
+  const vapidKey = document.getElementById('vapid-key-input').value.trim();
+  const serverKey = document.getElementById('server-key-input').value.trim();
+  
+  if (!vapidKey || !serverKey) {
+    return showToast('Por favor, completa ambos campos de credenciales');
+  }
+
+  updateState(room => {
+    if (!room.notificationsConfig) room.notificationsConfig = {};
+    room.notificationsConfig.vapidKey = vapidKey;
+    room.notificationsConfig.serverKey = serverKey;
+  });
+  
+  showToast('Credenciales guardadas con éxito 💾');
+  renderNotifModalContents();
+}
+
 function publishNotification(title, message, tags = 'bell') {
   if (!state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
-  if (!config.enabled) return;
+  if (!config.enabled || !config.serverKey) return;
 
   // Si somos Gabriel (user1), enviamos a Alexa (user2). Si somos Alexa, enviamos a Gabriel.
-  const targetTopic = state.user.role === 'user1' ? config.alexaTopic : config.gabrielTopic;
-  if (!targetTopic) return;
+  const targetToken = state.user.role === 'user1' ? config.user2Token : config.user1Token;
+  if (!targetToken) {
+    console.log('No target FCM token registered for partner.');
+    return;
+  }
 
-  fetch(`https://ntfy.sh/${targetTopic}`, {
+  fetch('https://fcm.googleapis.com/fcm/send', {
     method: 'POST',
-    body: message,
     headers: {
-      'Title': title,
-      'Tags': tags,
-      'Priority': 'default'
-    }
+      'Content-Type': 'application/json',
+      'Authorization': `key=${config.serverKey}`
+    },
+    body: JSON.stringify({
+      to: targetToken,
+      notification: {
+        title: title,
+        body: message,
+        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+        badge: 'https://silvermast1.github.io/Nosotros/favicon.ico'
+      },
+      data: {
+        tags: tags
+      }
+    })
   })
-  .then(response => console.log('Mobile notification sent to:', targetTopic))
-  .catch(error => console.error('Error sending mobile notification:', error));
+  .then(response => console.log('Native Push Notification sent to partner.'))
+  .catch(error => console.error('Error sending Native Push Notification:', error));
 }
 
 function publishTestNotification(targetUserRole) {
@@ -1662,24 +1776,32 @@ function publishTestNotification(targetUserRole) {
     return showToast('Configuración no disponible');
   }
   const config = state.room.notificationsConfig;
-  const targetTopic = targetUserRole === 'user1' ? config.gabrielTopic : config.alexaTopic;
+  if (!config.serverKey) return showToast('Falta la Clave del Servidor');
+
+  const targetToken = targetUserRole === 'user1' ? config.user1Token : config.user2Token;
   const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
   
-  if (!targetTopic) return showToast('Canal no configurado');
+  if (!targetToken) return showToast(`El celular de ${targetName} no está suscrito aún.`);
 
-  fetch(`https://ntfy.sh/${targetTopic}`, {
+  fetch('https://fcm.googleapis.com/fcm/send', {
     method: 'POST',
-    body: `¡Prueba exitosa! Estás recibiendo las notificaciones push en tu celular de vuestro espacio Nosotros. ❤️`,
     headers: {
-      'Title': `Prueba para ${targetName} 🔔`,
-      'Tags': 'bell,heart',
-      'Priority': 'high'
-    }
+      'Content-Type': 'application/json',
+      'Authorization': `key=${config.serverKey}`
+    },
+    body: JSON.stringify({
+      to: targetToken,
+      notification: {
+        title: `Prueba para ${targetName} 🔔`,
+        body: `¡Prueba exitosa! Estás recibiendo las notificaciones nativas en tu celular de vuestro espacio Nosotros. ❤️`,
+        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico'
+      }
+    })
   })
   .then(() => showToast(`Notificación de prueba enviada a ${targetName}`))
   .catch(error => {
     console.error(error);
-    showToast('Error al enviar notificación de prueba');
+    showToast('Error al enviar la notificación de prueba');
   });
 }
 
@@ -1689,6 +1811,7 @@ function openNotifModal() {
   if (modal) modal.classList.replace('hidden', 'flex');
 }
 
+// Cierra el modal de notificaciones
 function closeNotifModal() {
   const modal = document.getElementById('notif-modal');
   if (modal) modal.classList.replace('flex', 'hidden');
@@ -1701,14 +1824,40 @@ function renderNotifModalContents() {
   const mobileToggle = document.getElementById('mobile-notif-toggle');
   if (mobileToggle) mobileToggle.checked = !!config.enabled;
   
-  const topicInput = document.getElementById('my-notif-topic');
-  if (topicInput) {
-    topicInput.value = state.user.role === 'user1' ? config.gabrielTopic : config.alexaTopic;
-  }
+  const vapidInput = document.getElementById('vapid-key-input');
+  if (vapidInput) vapidInput.value = config.vapidKey || '';
+  
+  const serverInput = document.getElementById('server-key-input');
+  if (serverInput) serverInput.value = config.serverKey || '';
   
   const mobileSetup = document.getElementById('mobile-notif-setup');
   if (mobileSetup) {
     mobileSetup.style.display = config.enabled ? 'flex' : 'none';
+  }
+
+  // Mostrar estado del dispositivo actual
+  const myTokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
+  const myToken = config[myTokenKey];
+  const deviceStatusEl = document.getElementById('device-notif-status');
+  if (deviceStatusEl) {
+    if (myToken) {
+      deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Celular Suscrito y Activo</span>';
+    } else {
+      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Celular no suscrito (Presiona el botón de abajo)</span>';
+    }
+  }
+
+  // Mostrar si la pareja está suscrita
+  const partnerTokenKey = state.user.role === 'user1' ? 'user2Token' : 'user1Token';
+  const partnerToken = config[partnerTokenKey];
+  const partnerName = state.partner ? state.partner.name : 'Tu pareja';
+  const partnerStatusEl = document.getElementById('partner-notif-status');
+  if (partnerStatusEl) {
+    if (partnerToken) {
+      partnerStatusEl.innerHTML = `<span class="text-green-400">🟢 Celular de ${partnerName} Listo</span>`;
+    } else {
+      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName} no suscrito aún</span>`;
+    }
   }
 
   const browserStatus = document.getElementById('browser-notif-status');
@@ -1719,7 +1868,7 @@ function renderNotifModalContents() {
     if (browserBtn) browserBtn.style.display = 'none';
   } else {
     if (Notification.permission === 'granted') {
-      if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Activadas</span>';
+      if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Permiso del Navegador Concedido</span>';
       if (browserBtn) browserBtn.style.display = 'none';
     } else if (Notification.permission === 'denied') {
       if (browserStatus) browserStatus.textContent = 'Rechazadas (Desbloquéalas en los ajustes)';
@@ -1746,17 +1895,6 @@ function toggleMobileNotifications(checked) {
     mobileSetup.style.display = checked ? 'flex' : 'none';
   }
   showToast(checked ? 'Notificaciones móviles activadas 🔔' : 'Notificaciones móviles desactivadas 🔕');
-}
-
-function copyNotifTopic() {
-  const topicInput = document.getElementById('my-notif-topic');
-  if (topicInput && topicInput.value) {
-    navigator.clipboard.writeText(topicInput.value).then(() => {
-      showToast('¡Nombre de canal copiado! Pégalo en la app ntfy.');
-    }).catch(() => {
-      showToast('Canal: ' + topicInput.value);
-    });
-  }
 }
 
 function sendTestNotificationToSelf() {
@@ -1821,11 +1959,12 @@ function connectMQTT() {
     if (remoteState) {
       // Inicializar y guardar la configuración de notificaciones móviles en Firebase si no existe
       if (!remoteState.notificationsConfig) {
-        const randomSeed = Math.random().toString(36).substring(2, 7);
         remoteState.notificationsConfig = {
           enabled: true,
-          gabrielTopic: `nosotros-gabriel-230426-${randomSeed}`,
-          alexaTopic: `nosotros-alexa-230426-${randomSeed}`,
+          vapidKey: "",
+          serverKey: "",
+          user1Token: "",
+          user2Token: "",
           notifyOnLogin: true,
           notifyOnGames: true,
           notifyOnQuestions: true,
@@ -1908,6 +2047,13 @@ function connectMQTT() {
           triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
         } else {
           renderAll();
+        }
+
+        // Registrar FCM en segundo plano si hay permiso concedido y claves configuradas
+        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled && state.room.notificationsConfig.vapidKey) {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            registerFCM();
+          }
         }
       }
     }
@@ -2801,11 +2947,12 @@ function normalizeRoomState(room) {
 
   // Normalizar configuración de notificaciones móviles si no existe
   if (!room.notificationsConfig) {
-    const randomSeed = Math.random().toString(36).substring(2, 7);
     room.notificationsConfig = {
       enabled: true,
-      gabrielTopic: `nosotros-gabriel-230426-${randomSeed}`,
-      alexaTopic: `nosotros-alexa-230426-${randomSeed}`,
+      vapidKey: "",
+      serverKey: "",
+      user1Token: "",
+      user2Token: "",
       notifyOnLogin: true,
       notifyOnGames: true,
       notifyOnQuestions: true,
@@ -2814,14 +2961,10 @@ function normalizeRoomState(room) {
   } else {
     const config = room.notificationsConfig;
     if (config.enabled === undefined) config.enabled = true;
-    if (!config.gabrielTopic) {
-      const randomSeed = Math.random().toString(36).substring(2, 7);
-      config.gabrielTopic = `nosotros-gabriel-230426-${randomSeed}`;
-    }
-    if (!config.alexaTopic) {
-      const randomSeed = Math.random().toString(36).substring(2, 7);
-      config.alexaTopic = `nosotros-alexa-230426-${randomSeed}`;
-    }
+    if (config.vapidKey === undefined) config.vapidKey = "";
+    if (config.serverKey === undefined) config.serverKey = "";
+    if (config.user1Token === undefined) config.user1Token = "";
+    if (config.user2Token === undefined) config.user2Token = "";
     if (config.notifyOnLogin === undefined) config.notifyOnLogin = true;
     if (config.notifyOnGames === undefined) config.notifyOnGames = true;
     if (config.notifyOnQuestions === undefined) config.notifyOnQuestions = true;
