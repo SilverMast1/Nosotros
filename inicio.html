@@ -1074,6 +1074,83 @@
   </div>
 </div>
 
+<!-- MODAL CONFIGURACIÓN NOTIFICACIONES -->
+<div id="notif-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
+  <div class="glass rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fadeIn flex flex-col gap-4 max-h-[90vh] overflow-y-auto inner-scroll">
+    <div class="flex justify-between items-center border-b border-white/5 pb-3">
+      <div class="font-display text-xl flex items-center gap-2">
+        <i data-lucide="bell" class="w-5 h-5 text-pink-400"></i>
+        <span>Notificaciones del Espacio</span>
+      </div>
+      <button id="notif-close" onclick="closeNotifModal()" class="btn-ghost p-1 px-2.5 rounded-lg text-xs">✕</button>
+    </div>
+    
+    <!-- NOTIFICACIONES AL CELULAR -->
+    <div class="flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Notificaciones en el Celular</h3>
+          <p class="text-[10px] text-white/50">Recibe avisos al instante en tu celular vía ntfy.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="mobile-notif-toggle" class="sr-only peer" onchange="toggleMobileNotifications(this.checked)">
+          <div class="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-4 after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-pink-500 peer-checked:to-amber-500"></div>
+        </label>
+      </div>
+
+      <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN -->
+      <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
+        <div>
+          <span class="font-semibold text-amber-200">Paso 1:</span> Descarga la app <strong class="text-white">ntfy</strong> en tu celular:
+          <div class="flex gap-2 mt-2">
+            <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" class="btn-ghost py-1.5 px-3 rounded-xl text-[10px] flex items-center gap-1.5 flex-1 justify-center">
+              <i data-lucide="play" class="w-3 h-3 text-green-400"></i> Google Play
+            </a>
+            <a href="https://apps.apple.com/app/ntfy-push-notifications/id1625396347" target="_blank" class="btn-ghost py-1.5 px-3 rounded-xl text-[10px] flex items-center gap-1.5 flex-1 justify-center">
+              <i data-lucide="apple" class="w-3 h-3 text-blue-400"></i> App Store
+            </a>
+          </div>
+        </div>
+
+        <div class="border-t border-white/5 pt-3">
+          <span class="font-semibold text-amber-200">Paso 2:</span> Abre la app, presiona <strong class="text-white">+</strong> (Suscribirse a tema) e ingresa tu canal:
+          <div class="flex items-center gap-2 mt-2">
+            <input id="my-notif-topic" type="text" readonly class="input py-1.5 px-3 text-[11px] font-mono text-pink-300 bg-black/40" value="">
+            <button onclick="copyNotifTopic()" class="btn-ghost py-1.5 px-2.5 rounded-xl flex items-center justify-center shrink-0" title="Copiar canal">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <p class="text-[9px] text-white/40 mt-1 italic">Cada uno se suscribe a su propio canal para recibir las acciones del otro.</p>
+        </div>
+
+        <div class="border-t border-white/5 pt-3 flex flex-col gap-2">
+          <span class="font-semibold text-amber-200">Paso 3:</span> Comprueba que funciona:
+          <div class="flex gap-2">
+            <button onclick="sendTestNotificationToSelf()" class="btn-primary py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1">
+              <i data-lucide="bell" class="w-3 h-3"></i> Probar mi Celular
+            </button>
+            <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1 border-pink-500/30 hover:border-pink-500 text-pink-300">
+              <i data-lucide="heart" class="w-3 h-3"></i> Probar Pareja
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="border-t border-white/5 my-1"></div>
+
+    <!-- NOTIFICACIONES LOCALES DEL NAVEGADOR -->
+    <div class="flex flex-col gap-2">
+      <h3 class="text-sm font-semibold text-white">Notificaciones del Navegador (Locales)</h3>
+      <p class="text-[10px] text-white/50">Solo funcionan cuando tienes esta página web abierta.</p>
+      <div class="flex items-center justify-between gap-3 mt-1.5">
+        <span id="browser-notif-status" class="text-xs text-purple-200/60">—</span>
+        <button id="browser-notif-btn" onclick="requestBrowserNotificationPermission()" class="btn-ghost py-1.5 px-3 text-[10px] hidden">Activar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MENSAJE SORPRESA -->
 <div id="surprise-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
   <div class="glass rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-fadeIn flex flex-col gap-4">
@@ -1557,6 +1634,157 @@ function sendLocalNotification(title, body) {
   }
 }
 
+// ===== NOTIFICACIONES MÓVILES (ntfy.sh) =====
+function publishNotification(title, message, tags = 'bell') {
+  if (!state.room || !state.room.notificationsConfig) return;
+  const config = state.room.notificationsConfig;
+  if (!config.enabled) return;
+
+  // Si somos Gabriel (user1), enviamos a Alexa (user2). Si somos Alexa, enviamos a Gabriel.
+  const targetTopic = state.user.role === 'user1' ? config.alexaTopic : config.gabrielTopic;
+  if (!targetTopic) return;
+
+  fetch(`https://ntfy.sh/${targetTopic}`, {
+    method: 'POST',
+    body: message,
+    headers: {
+      'Title': title,
+      'Tags': tags,
+      'Priority': 'default'
+    }
+  })
+  .then(response => console.log('Mobile notification sent to:', targetTopic))
+  .catch(error => console.error('Error sending mobile notification:', error));
+}
+
+function publishTestNotification(targetUserRole) {
+  if (!state.room || !state.room.notificationsConfig) {
+    return showToast('Configuración no disponible');
+  }
+  const config = state.room.notificationsConfig;
+  const targetTopic = targetUserRole === 'user1' ? config.gabrielTopic : config.alexaTopic;
+  const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
+  
+  if (!targetTopic) return showToast('Canal no configurado');
+
+  fetch(`https://ntfy.sh/${targetTopic}`, {
+    method: 'POST',
+    body: `¡Prueba exitosa! Estás recibiendo las notificaciones push en tu celular de vuestro espacio Nosotros. ❤️`,
+    headers: {
+      'Title': `Prueba para ${targetName} 🔔`,
+      'Tags': 'bell,heart',
+      'Priority': 'high'
+    }
+  })
+  .then(() => showToast(`Notificación de prueba enviada a ${targetName}`))
+  .catch(error => {
+    console.error(error);
+    showToast('Error al enviar notificación de prueba');
+  });
+}
+
+function openNotifModal() {
+  renderNotifModalContents();
+  const modal = document.getElementById('notif-modal');
+  if (modal) modal.classList.replace('hidden', 'flex');
+}
+
+function closeNotifModal() {
+  const modal = document.getElementById('notif-modal');
+  if (modal) modal.classList.replace('flex', 'hidden');
+}
+
+function renderNotifModalContents() {
+  if (!state.room || !state.room.notificationsConfig) return;
+  const config = state.room.notificationsConfig;
+  
+  const mobileToggle = document.getElementById('mobile-notif-toggle');
+  if (mobileToggle) mobileToggle.checked = !!config.enabled;
+  
+  const topicInput = document.getElementById('my-notif-topic');
+  if (topicInput) {
+    topicInput.value = state.user.role === 'user1' ? config.gabrielTopic : config.alexaTopic;
+  }
+  
+  const mobileSetup = document.getElementById('mobile-notif-setup');
+  if (mobileSetup) {
+    mobileSetup.style.display = config.enabled ? 'flex' : 'none';
+  }
+
+  const browserStatus = document.getElementById('browser-notif-status');
+  const browserBtn = document.getElementById('browser-notif-btn');
+  
+  if (typeof Notification === 'undefined') {
+    if (browserStatus) browserStatus.textContent = 'No soportadas por este navegador';
+    if (browserBtn) browserBtn.style.display = 'none';
+  } else {
+    if (Notification.permission === 'granted') {
+      if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Activadas</span>';
+      if (browserBtn) browserBtn.style.display = 'none';
+    } else if (Notification.permission === 'denied') {
+      if (browserStatus) browserStatus.textContent = 'Rechazadas (Desbloquéalas en los ajustes)';
+      if (browserBtn) browserBtn.style.display = 'none';
+    } else {
+      if (browserStatus) browserStatus.textContent = 'Pendiente de activar';
+      if (browserBtn) {
+        browserBtn.style.display = 'inline-block';
+        browserBtn.textContent = 'Activar';
+      }
+    }
+  }
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleMobileNotifications(checked) {
+  updateState(room => {
+    if (!room.notificationsConfig) room.notificationsConfig = {};
+    room.notificationsConfig.enabled = checked;
+  });
+  const mobileSetup = document.getElementById('mobile-notif-setup');
+  if (mobileSetup) {
+    mobileSetup.style.display = checked ? 'flex' : 'none';
+  }
+  showToast(checked ? 'Notificaciones móviles activadas 🔔' : 'Notificaciones móviles desactivadas 🔕');
+}
+
+function copyNotifTopic() {
+  const topicInput = document.getElementById('my-notif-topic');
+  if (topicInput && topicInput.value) {
+    navigator.clipboard.writeText(topicInput.value).then(() => {
+      showToast('¡Nombre de canal copiado! Pégalo en la app ntfy.');
+    }).catch(() => {
+      showToast('Canal: ' + topicInput.value);
+    });
+  }
+}
+
+function sendTestNotificationToSelf() {
+  if (!state.user) return;
+  publishTestNotification(state.user.role);
+}
+
+// Envía notificación de prueba al celular de la pareja
+function sendTestNotificationToPartner() {
+  if (!state.user) return;
+  const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
+  publishTestNotification(partnerRole);
+}
+
+function requestBrowserNotificationPermission() {
+  if (typeof Notification === 'undefined') return;
+  Notification.requestPermission().then(permission => {
+    updateNotifIcon();
+    renderNotifModalContents();
+    if (permission === 'granted') {
+      showToast('¡Notificaciones del navegador activadas! 🔔');
+      sendLocalNotification('¡Hola!', 'Las notificaciones locales están activadas para vuestro espacio ❤️');
+    } else {
+      showToast('Notificaciones rechazadas 🔕');
+    }
+  });
+}
+
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
 function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
@@ -1591,6 +1819,22 @@ function connectMQTT() {
 
     const remoteState = snapshot.val();
     if (remoteState) {
+      // Inicializar y guardar la configuración de notificaciones móviles en Firebase si no existe
+      if (!remoteState.notificationsConfig) {
+        const randomSeed = Math.random().toString(36).substring(2, 7);
+        remoteState.notificationsConfig = {
+          enabled: true,
+          gabrielTopic: `nosotros-gabriel-230426-${randomSeed}`,
+          alexaTopic: `nosotros-alexa-230426-${randomSeed}`,
+          notifyOnLogin: true,
+          notifyOnGames: true,
+          notifyOnQuestions: true,
+          notifyOnPokes: true
+        };
+        roomRef.child('notificationsConfig').set(remoteState.notificationsConfig)
+          .catch(e => console.error("Error setting initial notificationsConfig:", e));
+      }
+
       if (!state.room || remoteState.lastUpdated !== state.room.lastUpdated) {
         const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
         const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
@@ -1723,6 +1967,17 @@ function sendLoveAction(actionType) {
     showToast(`¡Le enviaste un amor! ${emojiMap[actionType] || ''}`);
     if (actionType === 'kiss') audio.playKiss();
     else audio.playPoke();
+    
+    // Notificación móvil
+    const actionTextMap = {
+      'kiss': 'te mandó un beso gigante 😘',
+      'hug': 'te mandó un abrazo de oso 🤗',
+      'heart': 'te mandó un te amo 🥰',
+      'miss': 'te extraña mucho 💕'
+    };
+    const actionText = actionTextMap[actionType] || 'te mandó amor ❤️';
+    const tagMap = { 'kiss': 'kiss', 'hug': 'hugging', 'heart': 'heart', 'miss': 'pleading_face' };
+    publishNotification(`¡Amor de ${state.user.name}! ${emojiMap[actionType] || '❤️'}`, `${state.user.name} ${actionText}`, (tagMap[actionType] || 'heart') + ',heart');
   } else {
     showToast('Sin conexión');
   }
@@ -1786,6 +2041,14 @@ function initApp() {
   switchSection('dashboard');
   connectMQTT();
   renderAll();
+
+  // Notificar entrada a la web (solo una vez por sesión de pestaña)
+  if (!sessionStorage.getItem('notified_login')) {
+    sessionStorage.setItem('notified_login', 'true');
+    setTimeout(() => {
+      publishNotification('¡Entró a la web! 💖', `${state.user.name} acaba de entrar al espacio de Nosotros. ✨`, 'sparkles,heart');
+    }, 2000);
+  }
 }
 
 function logout() {
@@ -1936,6 +2199,9 @@ function saveAnswer() {
   });
   showToast('Respuesta guardada');
   audio.playMatch();
+
+  // Notificación móvil
+  publishNotification('Pregunta diaria contestada 💬', `¡${state.user.name} ha respondido la pregunta del día! Entra para leer su respuesta.`, 'speech_balloon,heart');
 }
 
 // ===== MEMORIA =====
@@ -1970,6 +2236,8 @@ function confirmBattleshipShips() {
     return showToast('Selecciona exactamente 3 celdas para tus barcos');
   }
 
+  let bothConfirmed = false;
+
   updateState(room => {
     if (!room.battleship) {
       room.battleship = { phase: 'placement', user1Ships: [], user2Ships: [], user1Shots: [], user2Shots: [], turn: 'user1', winner: null };
@@ -1986,11 +2254,19 @@ function confirmBattleshipShips() {
     if (u1Ships.length === 3 && u2Ships.length === 3) {
       room.battleship.phase = 'battle';
       room.battleship.turn = Math.random() < 0.5 ? 'user1' : 'user2';
+      bothConfirmed = true;
     }
   });
 
   state.localPlacedShips = [];
   showToast('¡Posiciones guardadas! Esperando a tu pareja...');
+
+  // Notificación móvil
+  if (bothConfirmed) {
+    publishNotification('Hundir la Flota 🚢', `¡Ambos colocaron sus barcos! Comienza la batalla naval. 💥`, 'ship,fireworks');
+  } else {
+    publishNotification('Hundir la Flota 🚢', `¡${state.user.name} ha colocado sus barcos! Te toca colocar los tuyos. ⚓`, 'ship,anchor');
+  }
 }
 
 function renderSharedBattleship() {
@@ -2171,6 +2447,9 @@ function handleBattleshipCellClick(index, isOpponent) {
 
     audio.playFlip();
 
+    let gameWon = false;
+    let turnChanged = false;
+
     updateState(room => {
       const rf = room.battleship;
       const rRole = state.user.role;
@@ -2187,6 +2466,7 @@ function handleBattleshipCellClick(index, isOpponent) {
         if (allSunk) {
           rf.winner = rRole;
           rf.phase = 'ended';
+          gameWon = true;
           triggerEmojiExplosion('🏆');
           showToast('🎉 ¡HAS HUNDIDO TODA LA FLOTA RIVAL! ¡GANASTE!');
         } else {
@@ -2198,8 +2478,16 @@ function handleBattleshipCellClick(index, isOpponent) {
 
       if (!rf.winner) {
         rf.turn = rRole === 'user1' ? 'user2' : 'user1';
+        turnChanged = true;
       }
     });
+
+    // Notificación móvil
+    if (gameWon) {
+      publishNotification('Hundir la Flota 🏆', `¡${state.user.name} ha hundido todos tus barcos y ganó la batalla! 🚢🎉`, 'tada,ship');
+    } else if (turnChanged) {
+      publishNotification('Hundir la Flota 🚢', `¡${state.user.name} realizó un disparo! Es tu turno de atacar. 💥`, 'ship,crossed_swords');
+    }
   }
 }
 
@@ -2265,6 +2553,9 @@ function handleCardClick(cardId) {
 
   audio.playFlip();
 
+  let gameCompleted = false;
+  let totalMoves = 0;
+
   updateState(room => {
     const b = room.memoryBoard;
     const c = b.cards.find(x => x.id === cardId);
@@ -2283,6 +2574,10 @@ function handleCardClick(cardId) {
         b.pairs++;
         b.flippedIndices = [];
         setTimeout(() => audio.playMatch(), 100);
+        if (b.pairs === 8) {
+          gameCompleted = true;
+          totalMoves = b.moves;
+        }
       } else {
         b.lock = true;
         setTimeout(() => {
@@ -2299,6 +2594,10 @@ function handleCardClick(cardId) {
       }
     }
   });
+
+  if (gameCompleted) {
+    publishNotification('Juego de Memoria 🏆', `¡${state.user.name} completó el tablero de memoria en ${totalMoves} movimientos! 🎉`, 'tada,layout_grid');
+  }
 }
 
 // ===== VERDAD O RETO =====
@@ -2426,6 +2725,11 @@ function spinRoulette() {
       timestamp: Date.now()
     };
   });
+
+  // Notificación móvil
+  const option = RULETA_OPTIONS[targetIndex];
+  const optionText = option ? option.text : 'algo especial';
+  publishNotification('La Ruleta del Amor 🎡', `¡${state.user.name} ha girado la ruleta! Le tocó: "${optionText}".`, 'ferris_wheel,gift');
 }
 
 function triggerRouletteSpinAnimation(angle, index, spinner) {
@@ -2494,6 +2798,35 @@ function getTicTacToeBoard(ttt) {
 
 function normalizeRoomState(room) {
   if (!room) return room;
+
+  // Normalizar configuración de notificaciones móviles si no existe
+  if (!room.notificationsConfig) {
+    const randomSeed = Math.random().toString(36).substring(2, 7);
+    room.notificationsConfig = {
+      enabled: true,
+      gabrielTopic: `nosotros-gabriel-230426-${randomSeed}`,
+      alexaTopic: `nosotros-alexa-230426-${randomSeed}`,
+      notifyOnLogin: true,
+      notifyOnGames: true,
+      notifyOnQuestions: true,
+      notifyOnPokes: true
+    };
+  } else {
+    const config = room.notificationsConfig;
+    if (config.enabled === undefined) config.enabled = true;
+    if (!config.gabrielTopic) {
+      const randomSeed = Math.random().toString(36).substring(2, 7);
+      config.gabrielTopic = `nosotros-gabriel-230426-${randomSeed}`;
+    }
+    if (!config.alexaTopic) {
+      const randomSeed = Math.random().toString(36).substring(2, 7);
+      config.alexaTopic = `nosotros-alexa-230426-${randomSeed}`;
+    }
+    if (config.notifyOnLogin === undefined) config.notifyOnLogin = true;
+    if (config.notifyOnGames === undefined) config.notifyOnGames = true;
+    if (config.notifyOnQuestions === undefined) config.notifyOnQuestions = true;
+    if (config.notifyOnPokes === undefined) config.notifyOnPokes = true;
+  }
   
   // Normalizar retos
   if (!room.retos) {
@@ -2705,6 +3038,8 @@ function handleTicTacToeCellClick(idx) {
   showToast(`⭐ Acción requerida: ${prompt}`, 5000);
 
   let triggerReset = false;
+  let gameWon = false;
+  let gameDraw = false;
 
   updateState(room => {
     const t = room.ticTacToe;
@@ -2720,7 +3055,6 @@ function handleTicTacToeCellClick(idx) {
       [0,4,8], [2,4,6]           // Diagonales
     ];
     
-    let gameWon = false;
     for (let combo of WIN_COMBOS) {
       const [idxA, idxB, idxC] = combo;
       if (b[idxA] && b[idxA] === b[idxB] && b[idxA] === b[idxC]) {
@@ -2739,11 +3073,21 @@ function handleTicTacToeCellClick(idx) {
       triggerReset = true;
     } else if (t.moves === 9) {
       t.winner = 'draw';
+      gameDraw = true;
       triggerReset = true;
     } else {
       t.turn = t.turn === 'user1' ? 'user2' : 'user1'; // Cambiar turno
     }
   });
+
+  // Notificación móvil
+  if (gameWon) {
+    publishNotification('Tres en Raya 🏆', `¡${state.user.name} ha ganado la partida de Tres en Raya! 🎉`, 'tada,game_die');
+  } else if (gameDraw) {
+    publishNotification('Tres en Raya 🤝', `La partida de Tres en Raya terminó en empate.`, 'handshake,game_die');
+  } else {
+    publishNotification('Tres en Raya 🎮', `¡${state.user.name} ha jugado su turno! Te toca jugar. ⚔️`, 'game_die,heart');
+  }
 
   if (triggerReset) {
     setTimeout(() => {
@@ -3068,6 +3412,9 @@ function saveSurpriseMsg() {
   showToast('¡Mensaje sorpresa guardado! 🎁');
   audio.playPoke();
   closeSurpriseModal();
+
+  // Notificación móvil
+  publishNotification('Mensaje Sorpresa 🎁', `¡${state.user.name} te ha dejado una sorpresa en el portal! Ve a verla. ❤️`, 'gift,love_letter');
 }
 
 // ===== ELIMINAR RETO =====
@@ -3112,6 +3459,9 @@ function compressAndUploadPhoto(file) {
       });
       showToast('¡Foto subida con éxito! 📸');
       audio.playPoke();
+
+      // Notificación móvil
+      publishNotification('Álbum de Fotos 📸', `¡${state.user.name} subió una nueva foto al álbum! 🖼️`, 'camera,heart');
     };
     img.src = event.target.result;
   };
@@ -3304,6 +3654,7 @@ function handlePuzzlePieceClick(clickedIdx) {
   
   audio.playFlip();
   
+  let gameSolved = false;
   updateState(room => {
     const p = room.puzzleBoard;
     const piecesArr = [...(p.pieces || [])];
@@ -3323,6 +3674,7 @@ function handlePuzzlePieceClick(clickedIdx) {
     
     if (isSolved) {
       p.completed = true;
+      gameSolved = true;
       setTimeout(() => {
         audio.playMatch();
         triggerEmojiExplosion('🎉');
@@ -3330,6 +3682,10 @@ function handlePuzzlePieceClick(clickedIdx) {
       }, 100);
     }
   });
+
+  if (gameSolved) {
+    publishNotification('Rompecabezas 🏆', `¡${state.user.name} completó el rompecabezas de amor! 🧩🎉`, 'tada,puzzle');
+  }
 }
 
 function updatePuzzleConfig() {
@@ -3391,27 +3747,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Notificaciones
   const notifBtn = document.getElementById('notif-toggle-btn');
   if (notifBtn) {
-    notifBtn.addEventListener('click', () => {
-      if (typeof Notification === 'undefined') {
-        showToast('Este navegador no soporta notificaciones de escritorio');
-        return;
-      }
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-          updateNotifIcon();
-          if (permission === 'granted') {
-            showToast('¡Notificaciones activadas! 🔔');
-            sendLocalNotification('¡Hola!', 'Las notificaciones están activadas para vuestro espacio ❤️');
-          } else {
-            showToast('Notificaciones rechazadas 🔕');
-          }
-        });
-      } else if (Notification.permission === 'granted') {
-        showToast('Las notificaciones ya están activadas 🔔');
-      } else {
-        showToast('Permiso bloqueado. Actívalo en los ajustes de tu navegador ⚙️');
-      }
-    });
+    notifBtn.addEventListener('click', openNotifModal);
   }
   updateNotifIcon();
 
