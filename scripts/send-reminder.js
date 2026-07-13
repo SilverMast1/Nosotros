@@ -19,25 +19,28 @@ function getFirebaseData() {
   });
 }
 
-function sendPush(token, serverKey, title, body) {
+function sendWebpushrNotification(restKey, authToken, targetRole, title, message) {
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify({
-      to: token,
-      notification: {
-        title: title,
-        body: body,
-        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-        badge: 'https://silvermast1.github.io/Nosotros/favicon.ico'
-      }
+      title: title,
+      message: message,
+      target_url: 'https://silvermast1.github.io/Nosotros/',
+      attribute: [
+        {
+          key: 'user_id',
+          value: targetRole
+        }
+      ]
     });
 
     const options = {
-      hostname: 'fcm.googleapis.com',
-      path: '/fcm/send',
+      hostname: 'api.webpushr.com',
+      path: '/v1/notification/send/attribute',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `key=${serverKey}`,
+        'webpushrKey': restKey,
+        'webpushrAuthToken': authToken,
         'Content-Length': Buffer.byteLength(postData)
       }
     };
@@ -63,8 +66,8 @@ async function main() {
     }
 
     const config = room.notificationsConfig;
-    if (!config.enabled || !config.serverKey) {
-      console.log('Notifications are disabled or Server Key is missing.');
+    if (!config.enabled || !config.restKey || !config.authToken) {
+      console.log('Notifications are disabled or Webpushr credentials are missing.');
       return;
     }
 
@@ -77,14 +80,12 @@ async function main() {
 
     // Si han pasado más de 2.5 horas, enviar recordatorio
     if (diffHours >= 2.5) {
-      console.log('Sending reminders...');
+      console.log('Sending reminders via Webpushr...');
       const promises = [];
-      if (config.user1Token) {
-        promises.push(sendPush(config.user1Token, config.serverKey, '¡Gabriel, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
-      }
-      if (config.user2Token) {
-        promises.push(sendPush(config.user2Token, config.serverKey, '¡Alexa, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
-      }
+      
+      // Gabriel es 'user1', Alexa es 'user2'
+      promises.push(sendWebpushrNotification(config.restKey, config.authToken, 'user1', '¡Gabriel, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
+      promises.push(sendWebpushrNotification(config.restKey, config.authToken, 'user2', '¡Alexa, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
       
       const results = await Promise.all(promises);
       console.log('Reminders sent successfully:', results);

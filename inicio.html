@@ -12,7 +12,6 @@
 <!-- SDK de Firebase (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
 <style>
   :root {
@@ -1101,19 +1100,23 @@
 
       <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN -->
       <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
-        <!-- PASO 1: INGRESAR CREDENCIALES DE FIREBASE -->
+        <!-- PASO 1: INGRESAR CREDENCIALES DE WEBPUSHR -->
         <div>
-          <span class="font-semibold text-amber-200">Paso 1:</span> Ingresar credenciales Web Push de tu Firebase:
+          <span class="font-semibold text-amber-200">Paso 1:</span> Ingresar claves de Webpushr:
           <div class="flex flex-col gap-2 mt-2">
             <div>
-              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Clave Pública VAPID</label>
-              <input id="vapid-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: BEl3yK-...">
+              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Tracking Key (Key)</label>
+              <input id="webpushr-tracking-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: BEl3yK-...">
             </div>
             <div>
-              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Clave del Servidor (Server Key Legacy)</label>
-              <input id="server-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: AAAA...">
+              <label class="text-[9px] uppercase text-white/40 block mb-0.5">REST API Key</label>
+              <input id="webpushr-rest-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: 98fae3...">
             </div>
-            <button onclick="saveFcmCredentials()" class="btn-primary py-1.5 text-[10px] mt-1 flex items-center justify-center gap-1.5">
+            <div>
+              <label class="text-[9px] uppercase text-white/40 block mb-0.5">REST Auth Token</label>
+              <input id="webpushr-auth-token-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: 472910...">
+            </div>
+            <button onclick="saveWebpushrCredentials()" class="btn-primary py-1.5 text-[10px] mt-1 flex items-center justify-center gap-1.5">
               <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar Credenciales
             </button>
           </div>
@@ -1124,7 +1127,7 @@
           <span class="font-semibold text-amber-200">Paso 2:</span> Activar notificaciones en este celular:
           <div class="flex flex-col gap-2 mt-2">
             <button onclick="subscribeThisDevice()" class="btn-ghost py-2 px-3 text-[10px] flex items-center justify-center gap-1.5 border-pink-500/20 hover:border-pink-500 text-pink-300">
-              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 🔔 Suscribir este Celular
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 🔔 Activar en este Celular
             </button>
             <div id="device-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
             <div id="partner-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
@@ -1142,6 +1145,12 @@
               Probar mi Celular
             </button>
             <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1 border-pink-500/10 text-pink-300 hover:border-pink-500/30">
+              Probar Pareja
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>0/10 text-pink-300 hover:border-pink-500/30">
               Probar Pareja
             </button>
           </div>
@@ -1646,129 +1655,114 @@ function sendLocalNotification(title, body) {
   }
 }
 
-// ===== NOTIFICACIONES MÓVILES (FCM NATIVAS) =====
-function registerFCM() {
+// ===== NOTIFICACIONES MÓVILES (WEBPUSHR NATIVAS) =====
+let webpushrInitialized = false;
+
+function initWebpushr() {
+  if (webpushrInitialized) return;
   if (!state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
-  
-  if (!config.enabled || !config.vapidKey) {
-    console.log('FCM Registration skipped: disabled or no VAPID Key.');
-    return;
-  }
+  if (!config.enabled || !config.trackingKey) return;
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('firebase-messaging-sw.js')
-      .then((registration) => {
-        console.log('Service Worker registrado con éxito:', registration);
-        
-        try {
-          const messaging = firebase.messaging();
-          // Intentar obtener el token de FCM
-          messaging.getToken({ 
-            vapidKey: config.vapidKey,
-            serviceWorkerRegistration: registration
-          })
-          .then((currentToken) => {
-            if (currentToken) {
-              console.log('Token FCM obtenido:', currentToken);
-              // Guardar token en Firebase Database para este usuario
-              const tokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
-              if (config[tokenKey] !== currentToken) {
-                updateState(room => {
-                  room.notificationsConfig[tokenKey] = currentToken;
-                });
-              }
-            } else {
-              console.warn('No se pudo obtener el token. Pide permiso.');
-            }
-          })
-          .catch((err) => {
-            console.error('Error al obtener el token FCM:', err);
-          });
-        } catch (e) {
-          console.error('Error al inicializar Firebase Messaging:', e);
-        }
-      })
-      .catch((err) => {
-        console.error('Fallo al registrar el Service Worker:', err);
-      });
+  // Cargar SDK de Webpushr
+  (function(w,d, s, id) {
+    w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
+    var js, fjs = d.getElementsByTagName(s)[0];
+    js = d.createElement(s);js.id = id;js.async=1;
+    js.src = "https://cdn.webpushr.com/app.js";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(window,document, 'script', 'webpushr-jssdk'));
+
+  webpushr('init', config.trackingKey);
+  webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
+
+  // Escuchar cuando el usuario se suscribe
+  webpushr('on', 'subscribe', function(sid) {
+    console.log('Webpushr suscripción exitosa, SID:', sid);
+    saveDeviceTokenInFirebase(sid);
+  });
+
+  webpushrInitialized = true;
+  console.log("Webpushr SDK inicializado para el rol:", state.user.role);
+}
+
+function saveDeviceTokenInFirebase(token) {
+  if (!state.room || !state.room.notificationsConfig) return;
+  const tokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
+  if (state.room.notificationsConfig[tokenKey] !== token) {
+    updateState(room => {
+      room.notificationsConfig[tokenKey] = token;
+    });
   }
 }
 
 function subscribeThisDevice() {
   if (!state.room || !state.room.notificationsConfig) return showToast('Configuración no disponible');
   const config = state.room.notificationsConfig;
-  if (!config.vapidKey || !config.serverKey) {
-    return showToast('Primero debes guardar la Clave VAPID y la Clave del Servidor');
+  if (!config.trackingKey) {
+    return showToast('Primero debes configurar y guardar el Tracking Key');
   }
 
-  if (typeof Notification === 'undefined') {
-    return showToast('Este navegador no soporta notificaciones de escritorio');
+  if (typeof webpushr !== 'undefined') {
+    webpushr('showPrompt');
+  } else {
+    // Si no está cargado el SDK, inicializar
+    initWebpushr();
+    setTimeout(() => {
+      if (typeof webpushr !== 'undefined') webpushr('showPrompt');
+    }, 1000);
   }
-
-  Notification.requestPermission().then((permission) => {
-    updateNotifIcon();
-    renderNotifModalContents();
-    if (permission === 'granted') {
-      showToast('Permiso concedido. Obteniendo token...');
-      registerFCM();
-    } else {
-      showToast('Permiso denegado 🔕');
-    }
-  });
 }
 
-function saveFcmCredentials() {
-  const vapidKey = document.getElementById('vapid-key-input').value.trim();
-  const serverKey = document.getElementById('server-key-input').value.trim();
+function saveWebpushrCredentials() {
+  const trackingKey = document.getElementById('webpushr-tracking-input').value.trim();
+  const restKey = document.getElementById('webpushr-rest-key-input').value.trim();
+  const authToken = document.getElementById('webpushr-auth-token-input').value.trim();
   
-  if (!vapidKey || !serverKey) {
-    return showToast('Por favor, completa ambos campos de credenciales');
+  if (!trackingKey || !restKey || !authToken) {
+    return showToast('Por favor, completa todas las claves de Webpushr');
   }
 
   updateState(room => {
     if (!room.notificationsConfig) room.notificationsConfig = {};
-    room.notificationsConfig.vapidKey = vapidKey;
-    room.notificationsConfig.serverKey = serverKey;
+    room.notificationsConfig.trackingKey = trackingKey;
+    room.notificationsConfig.restKey = restKey;
+    room.notificationsConfig.authToken = authToken;
   });
   
-  showToast('Credenciales guardadas con éxito 💾');
+  showToast('Claves de Webpushr guardadas 💾');
+  initWebpushr();
   renderNotifModalContents();
 }
 
 function publishNotification(title, message, tags = 'bell') {
   if (!state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
-  if (!config.enabled || !config.serverKey) return;
+  if (!config.enabled || !config.restKey || !config.authToken) return;
 
-  // Si somos Gabriel (user1), enviamos a Alexa (user2). Si somos Alexa, enviamos a Gabriel.
-  const targetToken = state.user.role === 'user1' ? config.user2Token : config.user1Token;
-  if (!targetToken) {
-    console.log('No target FCM token registered for partner.');
-    return;
-  }
+  const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
 
-  fetch('https://fcm.googleapis.com/fcm/send', {
+  fetch('https://api.webpushr.com/v1/notification/send/attribute', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `key=${config.serverKey}`
+      'webpushrKey': config.restKey,
+      'webpushrAuthToken': config.authToken
     },
     body: JSON.stringify({
-      to: targetToken,
-      notification: {
-        title: title,
-        body: message,
-        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-        badge: 'https://silvermast1.github.io/Nosotros/favicon.ico'
-      },
-      data: {
-        tags: tags
-      }
+      title: title,
+      message: message,
+      target_url: 'https://silvermast1.github.io/Nosotros/',
+      attribute: [
+        {
+          key: 'user_id',
+          value: partnerRole
+        }
+      ]
     })
   })
-  .then(response => console.log('Native Push Notification sent to partner.'))
-  .catch(error => console.error('Error sending Native Push Notification:', error));
+  .then(response => console.log('Webpushr Notification sent to partner.'))
+  .catch(error => console.error('Error sending Webpushr Notification:', error));
 }
 
 function publishTestNotification(targetUserRole) {
@@ -1776,26 +1770,27 @@ function publishTestNotification(targetUserRole) {
     return showToast('Configuración no disponible');
   }
   const config = state.room.notificationsConfig;
-  if (!config.serverKey) return showToast('Falta la Clave del Servidor');
+  if (!config.restKey || !config.authToken) return showToast('Faltan credenciales de envío en Webpushr');
 
-  const targetToken = targetUserRole === 'user1' ? config.user1Token : config.user2Token;
   const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
-  
-  if (!targetToken) return showToast(`El celular de ${targetName} no está suscrito aún.`);
 
-  fetch('https://fcm.googleapis.com/fcm/send', {
+  fetch('https://api.webpushr.com/v1/notification/send/attribute', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `key=${config.serverKey}`
+      'webpushrKey': config.restKey,
+      'webpushrAuthToken': config.authToken
     },
     body: JSON.stringify({
-      to: targetToken,
-      notification: {
-        title: `Prueba para ${targetName} 🔔`,
-        body: `¡Prueba exitosa! Estás recibiendo las notificaciones nativas en tu celular de vuestro espacio Nosotros. ❤️`,
-        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico'
-      }
+      title: `Prueba para ${targetName} 🔔`,
+      message: `¡Prueba exitosa! Estás recibiendo notificaciones nativas con Webpushr en tu celular. ❤️`,
+      target_url: 'https://silvermast1.github.io/Nosotros/',
+      attribute: [
+        {
+          key: 'user_id',
+          value: targetUserRole
+        }
+      ]
     })
   })
   .then(() => showToast(`Notificación de prueba enviada a ${targetName}`))
@@ -1824,11 +1819,14 @@ function renderNotifModalContents() {
   const mobileToggle = document.getElementById('mobile-notif-toggle');
   if (mobileToggle) mobileToggle.checked = !!config.enabled;
   
-  const vapidInput = document.getElementById('vapid-key-input');
-  if (vapidInput) vapidInput.value = config.vapidKey || '';
+  const trackingInput = document.getElementById('webpushr-tracking-input');
+  if (trackingInput) trackingInput.value = config.trackingKey || '';
   
-  const serverInput = document.getElementById('server-key-input');
-  if (serverInput) serverInput.value = config.serverKey || '';
+  const restInput = document.getElementById('webpushr-rest-key-input');
+  if (restInput) restInput.value = config.restKey || '';
+  
+  const authInput = document.getElementById('webpushr-auth-token-input');
+  if (authInput) authInput.value = config.authToken || '';
   
   const mobileSetup = document.getElementById('mobile-notif-setup');
   if (mobileSetup) {
@@ -1843,7 +1841,7 @@ function renderNotifModalContents() {
     if (myToken) {
       deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Celular Suscrito y Activo</span>';
     } else {
-      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Celular no suscrito (Presiona el botón de abajo)</span>';
+      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Celular no registrado / pendiente</span>';
     }
   }
 
@@ -1856,7 +1854,7 @@ function renderNotifModalContents() {
     if (partnerToken) {
       partnerStatusEl.innerHTML = `<span class="text-green-400">🟢 Celular de ${partnerName} Listo</span>`;
     } else {
-      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName} no suscrito aún</span>`;
+      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName} no registrado aún</span>`;
     }
   }
 
@@ -1961,8 +1959,9 @@ function connectMQTT() {
       if (!remoteState.notificationsConfig) {
         remoteState.notificationsConfig = {
           enabled: true,
-          vapidKey: "",
-          serverKey: "",
+          trackingKey: "",
+          restKey: "",
+          authToken: "",
           user1Token: "",
           user2Token: "",
           notifyOnLogin: true,
@@ -2049,11 +2048,9 @@ function connectMQTT() {
           renderAll();
         }
 
-        // Registrar FCM en segundo plano si hay permiso concedido y claves configuradas
-        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled && state.room.notificationsConfig.vapidKey) {
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            registerFCM();
-          }
+        // Inicializar Webpushr si está habilitado y tiene Tracking Key
+        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled && state.room.notificationsConfig.trackingKey) {
+          initWebpushr();
         }
       }
     }
@@ -2949,8 +2946,9 @@ function normalizeRoomState(room) {
   if (!room.notificationsConfig) {
     room.notificationsConfig = {
       enabled: true,
-      vapidKey: "",
-      serverKey: "",
+      trackingKey: "",
+      restKey: "",
+      authToken: "",
       user1Token: "",
       user2Token: "",
       notifyOnLogin: true,
@@ -2961,8 +2959,9 @@ function normalizeRoomState(room) {
   } else {
     const config = room.notificationsConfig;
     if (config.enabled === undefined) config.enabled = true;
-    if (config.vapidKey === undefined) config.vapidKey = "";
-    if (config.serverKey === undefined) config.serverKey = "";
+    if (config.trackingKey === undefined) config.trackingKey = "";
+    if (config.restKey === undefined) config.restKey = "";
+    if (config.authToken === undefined) config.authToken = "";
     if (config.user1Token === undefined) config.user1Token = "";
     if (config.user2Token === undefined) config.user2Token = "";
     if (config.notifyOnLogin === undefined) config.notifyOnLogin = true;
