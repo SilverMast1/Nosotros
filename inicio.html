@@ -1892,9 +1892,9 @@ function connectMQTT() {
       if (!remoteState.notificationsConfig) {
         remoteState.notificationsConfig = {
           enabled: true,
-          trackingKey: "",
-          restKey: "",
-          authToken: "",
+          trackingKey: "BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY",
+          restKey: "6ddcce97fb9371882e7da4804475918c",
+          authToken: "122695",
           user1Token: "",
           user2Token: "",
           notifyOnLogin: true,
@@ -2878,9 +2878,9 @@ function normalizeRoomState(room) {
   if (!room.notificationsConfig) {
     room.notificationsConfig = {
       enabled: true,
-      trackingKey: "",
-      restKey: "",
-      authToken: "",
+      trackingKey: "BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY",
+      restKey: "6ddcce97fb9371882e7da4804475918c",
+      authToken: "122695",
       user1Token: "",
       user2Token: "",
       notifyOnLogin: true,
@@ -2891,9 +2891,9 @@ function normalizeRoomState(room) {
   } else {
     const config = room.notificationsConfig;
     if (config.enabled === undefined) config.enabled = true;
-    if (config.trackingKey === undefined) config.trackingKey = "";
-    if (config.restKey === undefined) config.restKey = "";
-    if (config.authToken === undefined) config.authToken = "";
+    if (!config.trackingKey) config.trackingKey = "BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY";
+    if (!config.restKey) config.restKey = "6ddcce97fb9371882e7da4804475918c";
+    if (!config.authToken) config.authToken = "122695";
     if (config.user1Token === undefined) config.user1Token = "";
     if (config.user2Token === undefined) config.user2Token = "";
     if (config.notifyOnLogin === undefined) config.notifyOnLogin = true;
