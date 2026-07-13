@@ -1903,8 +1903,7 @@ function connectMQTT() {
         roomRef.child('notificationsConfig').set(remoteState.notificationsConfig)
           .catch(e => console.error("Error setting initial notificationsConfig:", e));
       }
-
-      if (!state.room || remoteState.lastUpdated !== state.room.lastUpdated) {
+      if (!state.room || remoteState.lastUpdated !== state.room.lastUpdated || JSON.stringify(remoteState.notificationsConfig) !== JSON.stringify(state.room.notificationsConfig)) {
         const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
         const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
         
