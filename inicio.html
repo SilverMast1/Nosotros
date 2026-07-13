@@ -13,6 +13,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <!-- Webpushr SDK -->
 <script>
+window._webpushrScriptReady = function() {
+  console.log("Webpushr SDK ready callback triggered");
+  window.webpushrScriptLoaded = true;
+  if (typeof initWebpushr === 'function') {
+    initWebpushr();
+  }
+};
+
 (function(w,d, s, id) {
   if(typeof(w.webpushr)!=='undefined') return;
   w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
@@ -1759,6 +1767,7 @@ function publishTestNotification(targetUserRole) {
 }
 
 function openNotifModal() {
+  initWebpushr(); // Intentar inicializar al abrir el modal por si el SDK ya se cargó
   renderNotifModalContents();
   const modal = document.getElementById('notif-modal');
   if (modal) modal.classList.replace('hidden', 'flex');
