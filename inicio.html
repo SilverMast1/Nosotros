@@ -11,7 +11,18 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <!-- SDK de Firebase (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<!-- Webpushr SDK -->
+<script>
+(function(w,d, s, id) {
+  if(typeof(w.webpushr)!=='undefined') return;
+  w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
+  var js, fjs = d.getElementsByTagName(s)[0];
+  js = d.createElement(s); js.id = id;js.async=1;
+  js.src = "https://cdn.webpushr.com/app.min.js";
+  fjs.parentNode.appendChild(js);
+}(window,document, 'script', 'webpushr-jssdk'));
+webpushr('setup',{'key':'BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY' });
+</script>
 
 <style>
   :root {
@@ -1620,29 +1631,20 @@ function initWebpushr() {
   if (webpushrInitialized) return;
   if (!state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
-  if (!config.enabled || !config.trackingKey) return;
+  if (!config.enabled) return;
 
-  // Cargar SDK de Webpushr
-  (function(w,d, s, id) {
-    if(typeof(w.webpushr)!=='undefined') return;
-    w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
-    var js, fjs = d.getElementsByTagName(s)[0];
-    js = d.createElement(s); js.id = id; js.async=1;
-    js.src = "https://cdn.webpushr.com/app.min.js";
-    fjs.parentNode.appendChild(js);
-  }(window,document, 'script', 'webpushr-jssdk'));
+  if (typeof webpushr !== 'undefined') {
+    webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
 
-  webpushr('setup', { 'key': config.trackingKey });
-  webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
+    // Escuchar cuando el usuario se suscribe
+    webpushr('on', 'subscribe', function(sid) {
+      console.log('Webpushr suscripción exitosa, SID:', sid);
+      saveDeviceTokenInFirebase(sid);
+    });
 
-  // Escuchar cuando el usuario se suscribe
-  webpushr('on', 'subscribe', function(sid) {
-    console.log('Webpushr suscripción exitosa, SID:', sid);
-    saveDeviceTokenInFirebase(sid);
-  });
-
-  webpushrInitialized = true;
-  console.log("Webpushr SDK inicializado para el rol:", state.user.role);
+    webpushrInitialized = true;
+    console.log("Webpushr SDK configurado para el rol:", state.user.role);
+  }
 }
 
 function saveDeviceTokenInFirebase(token) {
@@ -1656,20 +1658,11 @@ function saveDeviceTokenInFirebase(token) {
 }
 
 function subscribeThisDevice() {
-  if (!state.room || !state.room.notificationsConfig) return showToast('Configuración no disponible');
-  const config = state.room.notificationsConfig;
-  if (!config.trackingKey) {
-    return showToast('Error: Claves de Webpushr no configuradas en la base de datos.');
-  }
-
   if (typeof webpushr !== 'undefined') {
     webpushr('subscribe');
   } else {
-    // Si no está cargado el SDK, inicializar
+    showToast('Iniciando servicio de notificaciones, intenta de nuevo en un segundo...');
     initWebpushr();
-    setTimeout(() => {
-      if (typeof webpushr !== 'undefined') webpushr('subscribe');
-    }, 1000);
   }
 }
 
