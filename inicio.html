@@ -1098,62 +1098,28 @@
         </label>
       </div>
 
-      <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN -->
+      <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN SIMPLIFICADA -->
       <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
-        <!-- PASO 1: INGRESAR CREDENCIALES DE WEBPUSHR -->
-        <div>
-          <span class="font-semibold text-amber-200">Paso 1:</span> Ingresar claves de Webpushr:
-          <div class="flex flex-col gap-2 mt-2">
-            <div>
-              <label class="text-[9px] uppercase text-white/40 block mb-0.5">Tracking Key (Key)</label>
-              <input id="webpushr-tracking-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: BEl3yK-...">
-            </div>
-            <div>
-              <label class="text-[9px] uppercase text-white/40 block mb-0.5">REST API Key</label>
-              <input id="webpushr-rest-key-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: 98fae3...">
-            </div>
-            <div>
-              <label class="text-[9px] uppercase text-white/40 block mb-0.5">REST Auth Token</label>
-              <input id="webpushr-auth-token-input" type="text" class="input py-1 px-2 text-[10px] font-mono" placeholder="Ej: 472910...">
-            </div>
-            <button onclick="saveWebpushrCredentials()" class="btn-primary py-1.5 text-[10px] mt-1 flex items-center justify-center gap-1.5">
-              <i data-lucide="save" class="w-3.5 h-3.5"></i> Guardar Credenciales
-            </button>
-          </div>
+        <!-- ESTADO DE DISPOSITIVOS -->
+        <div class="flex flex-col gap-2">
+          <div id="device-notif-status" class="text-xs font-semibold text-white/80"></div>
+          <div id="partner-notif-status" class="text-xs font-semibold text-white/80"></div>
         </div>
 
-        <!-- PASO 2: SUSCRIBIR EL DISPOSITIVO -->
+        <!-- BOTÓN DE ACTIVACIÓN -->
+        <button onclick="subscribeThisDevice()" class="btn-primary py-2.5 text-[11px] flex items-center justify-center gap-1.5 shadow-lg">
+          <i data-lucide="smartphone" class="w-4 h-4"></i> 🔔 Activar en este Celular
+        </button>
+
+        <p class="text-[9px] text-white/40 leading-relaxed">
+          <strong>Nota para iPhone (iOS):</strong> Primero abre la página en Safari, presiona <strong>Compartir</strong> y dale a <strong>"Agregar a pantalla de inicio"</strong>. Luego abre esa app instalada y actívalas allí.
+        </p>
+
+        <!-- BOTÓN DE PRUEBA PAREJA -->
         <div class="border-t border-white/5 pt-3">
-          <span class="font-semibold text-amber-200">Paso 2:</span> Activar notificaciones en este celular:
-          <div class="flex flex-col gap-2 mt-2">
-            <button onclick="subscribeThisDevice()" class="btn-ghost py-2 px-3 text-[10px] flex items-center justify-center gap-1.5 border-pink-500/20 hover:border-pink-500 text-pink-300">
-              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 🔔 Activar en este Celular
-            </button>
-            <div id="device-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
-            <div id="partner-notif-status" class="text-[9px] text-center font-semibold text-white/60"></div>
-          </div>
-          <p class="text-[8.5px] text-white/40 mt-2 leading-relaxed">
-            <strong>Nota para iPhone (iOS):</strong> Primero abre la página en Safari, presiona <strong>Compartir</strong> y dale a <strong>"Agregar a pantalla de inicio"</strong>. Luego abre esa app instalada y actívalas allí.
-          </p>
-        </div>
-
-        <!-- PASO 3: PRUEBA -->
-        <div class="border-t border-white/5 pt-3 flex flex-col gap-2">
-          <span class="font-semibold text-amber-200">Paso 3:</span> Enviar notificación de prueba:
-          <div class="flex gap-2">
-            <button onclick="sendTestNotificationToSelf()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1">
-              Probar mi Celular
-            </button>
-            <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] flex-1 flex items-center justify-center gap-1 border-pink-500/10 text-pink-300 hover:border-pink-500/30">
-              Probar Pareja
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>0/10 text-pink-300 hover:border-pink-500/30">
-              Probar Pareja
-            </button>
-          </div>
+          <button onclick="sendTestNotificationToPartner()" class="btn-ghost py-2 px-3 text-[10px] w-full flex items-center justify-center gap-1.5 border-pink-500/20 text-pink-300 hover:border-pink-500/50">
+            <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-400"></i> Enviar prueba a mi pareja
+          </button>
         </div>
       </div>
     </div>
@@ -1700,7 +1666,7 @@ function subscribeThisDevice() {
   if (!state.room || !state.room.notificationsConfig) return showToast('Configuración no disponible');
   const config = state.room.notificationsConfig;
   if (!config.trackingKey) {
-    return showToast('Primero debes configurar y guardar el Tracking Key');
+    return showToast('Error: Claves de Webpushr no configuradas en la base de datos.');
   }
 
   if (typeof webpushr !== 'undefined') {
@@ -1712,27 +1678,6 @@ function subscribeThisDevice() {
       if (typeof webpushr !== 'undefined') webpushr('showPrompt');
     }, 1000);
   }
-}
-
-function saveWebpushrCredentials() {
-  const trackingKey = document.getElementById('webpushr-tracking-input').value.trim();
-  const restKey = document.getElementById('webpushr-rest-key-input').value.trim();
-  const authToken = document.getElementById('webpushr-auth-token-input').value.trim();
-  
-  if (!trackingKey || !restKey || !authToken) {
-    return showToast('Por favor, completa todas las claves de Webpushr');
-  }
-
-  updateState(room => {
-    if (!room.notificationsConfig) room.notificationsConfig = {};
-    room.notificationsConfig.trackingKey = trackingKey;
-    room.notificationsConfig.restKey = restKey;
-    room.notificationsConfig.authToken = authToken;
-  });
-  
-  showToast('Claves de Webpushr guardadas 💾');
-  initWebpushr();
-  renderNotifModalContents();
 }
 
 function publishNotification(title, message, tags = 'bell') {
@@ -1819,15 +1764,6 @@ function renderNotifModalContents() {
   const mobileToggle = document.getElementById('mobile-notif-toggle');
   if (mobileToggle) mobileToggle.checked = !!config.enabled;
   
-  const trackingInput = document.getElementById('webpushr-tracking-input');
-  if (trackingInput) trackingInput.value = config.trackingKey || '';
-  
-  const restInput = document.getElementById('webpushr-rest-key-input');
-  if (restInput) restInput.value = config.restKey || '';
-  
-  const authInput = document.getElementById('webpushr-auth-token-input');
-  if (authInput) authInput.value = config.authToken || '';
-  
   const mobileSetup = document.getElementById('mobile-notif-setup');
   if (mobileSetup) {
     mobileSetup.style.display = config.enabled ? 'flex' : 'none';
@@ -1839,9 +1775,9 @@ function renderNotifModalContents() {
   const deviceStatusEl = document.getElementById('device-notif-status');
   if (deviceStatusEl) {
     if (myToken) {
-      deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Celular Suscrito y Activo</span>';
+      deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Tu Celular: Suscrito y Activo</span>';
     } else {
-      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Celular no registrado / pendiente</span>';
+      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Tu Celular: No registrado / pendiente</span>';
     }
   }
 
@@ -1852,9 +1788,9 @@ function renderNotifModalContents() {
   const partnerStatusEl = document.getElementById('partner-notif-status');
   if (partnerStatusEl) {
     if (partnerToken) {
-      partnerStatusEl.innerHTML = `<span class="text-green-400">🟢 Celular de ${partnerName} Listo</span>`;
+      partnerStatusEl.innerHTML = `<span class="text-green-400">🟢 Celular de ${partnerName}: Listo</span>`;
     } else {
-      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName} no registrado aún</span>`;
+      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName}: No registrado aún</span>`;
     }
   }
 
@@ -1893,11 +1829,6 @@ function toggleMobileNotifications(checked) {
     mobileSetup.style.display = checked ? 'flex' : 'none';
   }
   showToast(checked ? 'Notificaciones móviles activadas 🔔' : 'Notificaciones móviles desactivadas 🔕');
-}
-
-function sendTestNotificationToSelf() {
-  if (!state.user) return;
-  publishTestNotification(state.user.role);
 }
 
 // Envía notificación de prueba al celular de la pareja
