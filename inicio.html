@@ -21,7 +21,21 @@
   js.src = "https://cdn.webpushr.com/app.min.js";
   fjs.parentNode.appendChild(js);
 }(window,document, 'script', 'webpushr-jssdk'));
-webpushr('setup',{'key':'BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY' });
+webpushr('setup', {
+  'key': 'BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY',
+  'sw': 'none'
+});
+
+// Registrar el Service Worker manualmente para el subdirectorio de GitHub Pages (/Nosotros/)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Nosotros/webpushr-sw.js', { scope: '/Nosotros/' })
+    .then(function(reg) {
+      console.log('Service Worker de Webpushr registrado manualmente:', reg);
+    })
+    .catch(function(err) {
+      console.error('Error al registrar Service Worker de Webpushr:', err);
+    });
+}
 </script>
 
 <style>
