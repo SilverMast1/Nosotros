@@ -1641,33 +1641,37 @@ function sendLocalNotification(title, body) {
 // ===== NOTIFICACIONES MÓVILES (WEBPUSHR NATIVAS) =====
 let webpushrInitialized = false;
 
+window._webpushrScriptReady = function() {
+  console.log("Webpushr SDK ready callback triggered");
+  initWebpushr();
+};
+
 function initWebpushr() {
   if (webpushrInitialized) return;
-  if (!state.room || !state.room.notificationsConfig) return;
+  if (typeof webpushr === 'undefined') return;
+  if (!state.user || !state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
   if (!config.enabled) return;
 
-  if (typeof webpushr !== 'undefined') {
-    webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
+  webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
 
-    // Escuchar cuando el usuario se suscribe
-    webpushr('on', 'subscribe', function(sid) {
-      console.log('Webpushr suscripción exitosa, SID:', sid);
+  // Escuchar cuando el usuario se suscribe
+  webpushr('on', 'subscribe', function(sid) {
+    console.log('Webpushr suscripción exitosa, SID:', sid);
+    saveDeviceTokenInFirebase(sid);
+  });
+
+  // Intentar obtener el ID de suscriptor si ya está registrado
+  webpushr('fetch_id', function(sid) {
+    if (sid) {
+      console.log('Webpushr suscriptor existente obtenido con fetch_id, SID:', sid);
       saveDeviceTokenInFirebase(sid);
-    });
+      renderNotifModalContents();
+    }
+  });
 
-    // Intentar obtener el ID de suscriptor si ya está registrado
-    webpushr('fetch_id', function(sid) {
-      if (sid) {
-        console.log('Webpushr suscriptor existente obtenido con fetch_id, SID:', sid);
-        saveDeviceTokenInFirebase(sid);
-        renderNotifModalContents();
-      }
-    });
-
-    webpushrInitialized = true;
-    console.log("Webpushr SDK configurado para el rol:", state.user.role);
-  }
+  webpushrInitialized = true;
+  console.log("Webpushr SDK configurado para el rol:", state.user.role);
 }
 
 function saveDeviceTokenInFirebase(token) {
