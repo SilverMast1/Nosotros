@@ -1175,15 +1175,7 @@
     </div>
   </div>
 </div>
-
 <script>
-// Error catcher global para depuración
-window.onerror = function(message, source, lineno, colno, error) {
-  const errorMsg = "ERROR DETECTADO:\n" + message + "\nEn: " + source + "\nLínea: " + lineno + "\nColumna: " + colno + "\nDetalle: " + (error ? error.stack : 'Ninguno');
-  console.error(errorMsg);
-  alert(errorMsg);
-  return false;
-};
 
 // ===== SINTETIZADOR DE AUDIO (WEB AUDIO API) =====
 class LoveAudioEngine {
