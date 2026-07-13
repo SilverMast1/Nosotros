@@ -1853,6 +1853,7 @@ function requestBrowserNotificationPermission() {
 }
 
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
+let databaseLoaded = false;
 function connectMQTT() {
   const statusEl = document.getElementById('conn-status');
   
@@ -1877,6 +1878,7 @@ function connectMQTT() {
 
   // 1. Escuchar cambios de estado en tiempo real
   roomRef.on('value', (snapshot) => {
+    databaseLoaded = true;
     const liveStatusEl = document.getElementById('conn-status');
     if (liveStatusEl) liveStatusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
     const liveSubtitleEl = document.getElementById('header-subtitle');
@@ -2023,7 +2025,7 @@ function updateState(updaterFunction) {
   state.room = normalizeRoomState(state.room);
   state.room.lastUpdated = Date.now();
   saveLocal();
-  if (roomRef) {
+  if (roomRef && databaseLoaded) {
     roomRef.set(state.room).catch(e => console.error("Firebase write error", e));
   }
   renderAll();
