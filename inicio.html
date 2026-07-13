@@ -1632,14 +1632,15 @@ function initWebpushr() {
 
   // Cargar SDK de Webpushr
   (function(w,d, s, id) {
+    if(typeof(w.webpushr)!=='undefined') return;
     w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
     var js, fjs = d.getElementsByTagName(s)[0];
-    js = d.createElement(s);js.id = id;js.async=1;
-    js.src = "https://cdn.webpushr.com/app.js";
-    fjs.parentNode.insertBefore(js, fjs);
+    js = d.createElement(s); js.id = id; js.async=1;
+    js.src = "https://cdn.webpushr.com/app.min.js";
+    fjs.parentNode.appendChild(js);
   }(window,document, 'script', 'webpushr-jssdk'));
 
-  webpushr('init', config.trackingKey);
+  webpushr('setup', { 'key': config.trackingKey });
   webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
 
   // Escuchar cuando el usuario se suscribe
@@ -1670,12 +1671,12 @@ function subscribeThisDevice() {
   }
 
   if (typeof webpushr !== 'undefined') {
-    webpushr('showPrompt');
+    webpushr('subscribe');
   } else {
     // Si no está cargado el SDK, inicializar
     initWebpushr();
     setTimeout(() => {
-      if (typeof webpushr !== 'undefined') webpushr('showPrompt');
+      if (typeof webpushr !== 'undefined') webpushr('subscribe');
     }, 1000);
   }
 }
