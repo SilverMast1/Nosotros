@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nosotros · Gabriel & Alexa</title>
+<link rel="manifest" href="manifest.json">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,40 +12,6 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-<!-- Webpushr SDK -->
-<script>
-window._webpushrScriptReady = function() {
-  console.log("Webpushr SDK ready callback triggered");
-  window.webpushrScriptLoaded = true;
-  if (typeof initWebpushr === 'function') {
-    initWebpushr();
-  }
-};
-
-(function(w,d, s, id) {
-  if(typeof(w.webpushr)!=='undefined') return;
-  w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
-  var js, fjs = d.getElementsByTagName(s)[0];
-  js = d.createElement(s); js.id = id;js.async=1;
-  js.src = "https://cdn.webpushr.com/app.min.js";
-  fjs.parentNode.appendChild(js);
-}(window,document, 'script', 'webpushr-jssdk'));
-webpushr('setup', {
-  'key': 'BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY',
-  'sw': 'none'
-});
-
-// Registrar el Service Worker manualmente para el subdirectorio de GitHub Pages (/Nosotros/)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/Nosotros/webpushr-sw.js', { scope: '/Nosotros/' })
-    .then(function(reg) {
-      console.log('Service Worker de Webpushr registrado manualmente:', reg);
-    })
-    .catch(function(err) {
-      console.error('Error al registrar Service Worker de Webpushr:', err);
-    });
-}
-</script>
 
 <style>
   :root {
@@ -1134,19 +1101,37 @@ if ('serviceWorker' in navigator) {
       <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN SIMPLIFICADA -->
       <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
         <!-- ESTADO DE DISPOSITIVOS -->
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 bg-black/20 p-3 rounded-xl border border-white/5">
           <div id="device-notif-status" class="text-xs font-semibold text-white/80"></div>
           <div id="partner-notif-status" class="text-xs font-semibold text-white/80"></div>
         </div>
 
-        <!-- BOTÓN DE ACTIVACIÓN -->
-        <button onclick="subscribeThisDevice()" class="btn-primary py-2.5 text-[11px] flex items-center justify-center gap-1.5 shadow-lg">
-          <i data-lucide="smartphone" class="w-4 h-4"></i> 🔔 Activar en este Celular
-        </button>
+        <!-- GUÍA PASO A PASO PARA NATIVAS SIN APP -->
+        <div class="flex flex-col gap-2.5 border-t border-white/5 pt-2">
+          <h4 class="text-xs font-bold text-pink-300 flex items-center gap-1">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-pink-400"></i> ¿Cómo activarlas sin descargar apps?
+          </h4>
+          <ol class="list-decimal list-inside text-[10px] text-white/70 space-y-1.5 leading-normal">
+            <li>
+              <strong>Instala la Web en tu Celular:</strong>
+              <div class="pl-3.5 mt-0.5 text-white/50">
+                • <strong>iPhone (iOS):</strong> Pulsa <i data-lucide="share" class="inline w-3 h-3 text-pink-400"></i> Compartir en Safari y dale a <strong>"Agregar a pantalla de inicio"</strong>.<br>
+                • <strong>Android:</strong> Pulsa los <i data-lucide="more-vertical" class="inline w-3 h-3 text-pink-400"></i> tres puntos en Chrome y dale a <strong>"Instalar aplicación"</strong>.
+              </div>
+            </li>
+            <li>
+              <strong>Abre la App Instalada:</strong> Ejecuta el icono de "Nosotros" que se creó en tu pantalla de inicio.
+            </li>
+            <li>
+              <strong>Activa el Botón:</strong> Abre este modal dentro de la app instalada y pulsa el botón de abajo.
+            </li>
+          </ol>
+        </div>
 
-        <p class="text-[9px] text-white/40 leading-relaxed">
-          <strong>Nota para iPhone (iOS):</strong> Primero abre la página en Safari, presiona <strong>Compartir</strong> y dale a <strong>"Agregar a pantalla de inicio"</strong>. Luego abre esa app instalada y actívalas allí.
-        </p>
+        <!-- BOTÓN DE ACTIVACIÓN -->
+        <button onclick="subscribeThisDevice()" class="btn-primary py-2.5 text-[11px] flex items-center justify-center gap-1.5 shadow-lg mt-1">
+          <i data-lucide="bell" class="w-4 h-4"></i> 🔔 Activar en este Celular
+        </button>
 
         <!-- BOTÓN DE PRUEBA PAREJA -->
         <div class="border-t border-white/5 pt-3">
@@ -1648,18 +1633,66 @@ function sendLocalNotification(title, body) {
 
 // ===== NOTIFICACIONES MÓVILES (WEBPUSHR NATIVAS) =====
 let webpushrInitialized = false;
+let webpushrScriptLoaded = false;
 
 window._webpushrScriptReady = function() {
   console.log("Webpushr SDK ready callback triggered");
+  webpushrScriptLoaded = true;
   initWebpushr();
 };
 
+function loadWebpushrSDK(trackingKey) {
+  if (webpushrScriptLoaded) return;
+  if (!trackingKey) return;
+  
+  console.log("Cargando Webpushr SDK con Tracking Key:", trackingKey);
+  
+  window.webpushr = window.webpushr || function() {
+    (window.webpushr.q = window.webpushr.q || []).push(arguments);
+  };
+  
+  // Obtener ruta base actual para registrar el service worker sin errores
+  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  const swUrl = basePath + 'webpushr-sw.js';
+  
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(swUrl, { scope: basePath })
+      .then(function(reg) {
+        console.log('Service Worker de Webpushr registrado dinámicamente:', reg);
+      })
+      .catch(function(err) {
+        console.error('Error al registrar Service Worker de Webpushr:', err);
+      });
+  }
+
+  const js = document.createElement('script');
+  js.id = 'webpushr-jssdk';
+  js.async = true;
+  js.src = "https://cdn.webpushr.com/app.min.js";
+  js.onload = function() {
+    console.log("Webpushr SDK Script cargado");
+    webpushrScriptLoaded = true;
+    initWebpushr();
+  };
+  document.head.appendChild(js);
+  
+  webpushr('setup', {
+    'key': trackingKey,
+    'sw': 'none'
+  });
+}
+
 function initWebpushr() {
-  if (webpushrInitialized) return;
-  if (typeof webpushr === 'undefined') return;
   if (!state.user || !state.room || !state.room.notificationsConfig) return;
   const config = state.room.notificationsConfig;
   if (!config.enabled) return;
+
+  if (typeof webpushr === 'undefined' || !webpushrScriptLoaded) {
+    loadWebpushrSDK(config.trackingKey);
+    return;
+  }
+
+  if (webpushrInitialized) return;
 
   webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
 
@@ -1693,7 +1726,7 @@ function saveDeviceTokenInFirebase(token) {
 }
 
 function subscribeThisDevice() {
-  if (typeof webpushr !== 'undefined') {
+  if (typeof webpushr !== 'undefined' && webpushrScriptLoaded) {
     webpushr('subscribe');
   } else {
     showToast('Iniciando servicio de notificaciones, intenta de nuevo en un segundo...');
@@ -1707,6 +1740,7 @@ function publishNotification(title, message, tags = 'bell') {
   if (!config.enabled || !config.restKey || !config.authToken) return;
 
   const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
+  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
 
   fetch('https://api.webpushr.com/v1/notification/send/attribute', {
     method: 'POST',
@@ -1718,7 +1752,7 @@ function publishNotification(title, message, tags = 'bell') {
     body: JSON.stringify({
       title: title,
       message: message,
-      target_url: 'https://silvermast1.github.io/Nosotros/',
+      target_url: window.location.origin + basePath,
       attribute: [
         {
           key: 'user_id',
@@ -1739,6 +1773,7 @@ function publishTestNotification(targetUserRole) {
   if (!config.restKey || !config.authToken) return showToast('Faltan credenciales de envío en Webpushr');
 
   const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
+  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
 
   fetch('https://api.webpushr.com/v1/notification/send/attribute', {
     method: 'POST',
@@ -1750,7 +1785,7 @@ function publishTestNotification(targetUserRole) {
     body: JSON.stringify({
       title: `Prueba para ${targetName} 🔔`,
       message: `¡Prueba exitosa! Estás recibiendo notificaciones nativas con Webpushr en tu celular. ❤️`,
-      target_url: 'https://silvermast1.github.io/Nosotros/',
+      target_url: window.location.origin + basePath,
       attribute: [
         {
           key: 'user_id',
