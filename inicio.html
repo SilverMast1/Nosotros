@@ -234,7 +234,9 @@
   /* Diseños de sección a pantalla completa (no scroll) */
   .section { display: none; height: 100%; width: 100%; overflow: hidden; }
   .section.active { display: flex; flex-direction: column; animation: fadeIn 0.4s ease forwards; }
-  #section-dashboard, #section-puzzle, #section-retos, #section-preguntas, #section-vales {
+  #section-dashboard, #section-puzzle, #section-retos, #section-preguntas, #section-vales,
+  #section-cancion, #section-crucigrama, #section-encadenadas, #section-dados,
+  #section-sobre, #section-ahorcado, #section-conecta4 {
     height: auto !important;
     overflow: visible !important;
   }
@@ -552,6 +554,93 @@
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.03); }
   }
+
+  /* ── Crucigrama ── */
+  .cw-cell {
+    width: 34px; height: 34px;
+    border: 1px solid var(--border);
+    background: rgba(10,3,14,0.55);
+    color: var(--fg);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    outline: none;
+    border-radius: 6px;
+    transition: border-color 0.2s, background 0.2s;
+    caret-color: var(--accent);
+  }
+  .cw-cell:focus { border-color: var(--accent); background: rgba(255,74,118,0.08); }
+  .cw-cell.cw-black { background: rgba(0,0,0,0.7); border-color: transparent; cursor: default; }
+  .cw-cell.cw-correct { background: rgba(74,222,128,0.1); border-color: #4ade80; }
+  .cw-cell.cw-wrong { background: rgba(255,74,118,0.15); border-color: var(--accent); }
+  .cw-cell.cw-num { position: relative; }
+  .cw-num-label { position: absolute; top: 1px; left: 2px; font-size: 7px; color: var(--accent-2); font-weight: 700; line-height: 1; pointer-events: none; }
+  .cw-grid { display: inline-grid; gap: 3px; }
+
+  /* ── Palabras encadenadas ── */
+  .enc-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 99px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .enc-chip.mine { border-color: var(--accent); background: rgba(255,74,118,0.08); }
+  .enc-chip.theirs { border-color: var(--accent-2); background: rgba(255,181,71,0.08); }
+
+  /* ── Dados ── */
+  @keyframes shake {
+    0%,100%{ transform: rotate(0deg) scale(1); }
+    20%{ transform: rotate(-12deg) scale(1.1); }
+    40%{ transform: rotate(10deg) scale(1.12); }
+    60%{ transform: rotate(-8deg) scale(1.08); }
+    80%{ transform: rotate(6deg) scale(1.05); }
+  }
+  .dado-rolling { animation: shake 0.5s ease-in-out; }
+
+  /* ── Ahorcado ── */
+  .ah-letter-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .ah-letter-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(255,74,118,0.1); }
+  .ah-letter-btn:disabled { opacity: 0.3; cursor: default; }
+  .ah-letter-btn.hit { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
+  .ah-letter-btn.miss { background: rgba(255,74,118,0.08); border-color: var(--accent); color: var(--accent); }
+
+  /* ── Conecta 4 ── */
+  .c4-cell {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.07);
+    cursor: pointer;
+    transition: background 0.25s, transform 0.15s, border-color 0.25s;
+  }
+  .c4-cell:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.25); }
+  .c4-cell.p1 { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(255,74,118,0.5); cursor: default; }
+  .c4-cell.p2 { background: var(--accent-2); border-color: var(--accent-2); box-shadow: 0 0 8px rgba(255,181,71,0.5); cursor: default; }
+  .c4-cell.winning { animation: c4pulse 0.8s ease-in-out infinite alternate; }
+  @keyframes c4pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+  /* ── Sobre sellado ── */
+  .sobre-item {
+    border-radius: 14px;
+    border: 1px solid rgba(255,181,71,0.2);
+    background: linear-gradient(135deg,#1a0825 0%,#120418 100%);
+    padding: 12px 16px;
+    transition: all 0.3s;
+  }
+  .sobre-item.locked { cursor: not-allowed; opacity: 0.75; }
+  .sobre-item.unlocked { border-color: rgba(74,222,128,0.35); cursor: pointer; }
+  .sobre-item.unlocked:hover { background: rgba(74,222,128,0.05); }
 </style>
 </head>
 <body>
@@ -620,6 +709,13 @@
       <button class="tab" data-section="flota"><i data-lucide="anchor" class="w-3.5 h-3.5 text-blue-300"></i>Flota</button>
       <button class="tab" data-section="vales"><i data-lucide="ticket" class="w-3.5 h-3.5 text-purple-300"></i>Vales</button>
       <button class="tab" data-section="retos"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i>Retos</button>
+      <button class="tab" data-section="cancion"><i data-lucide="music" class="w-3.5 h-3.5 text-green-300"></i>Canción</button>
+      <button class="tab" data-section="crucigrama"><i data-lucide="grid" class="w-3.5 h-3.5 text-yellow-300"></i>Crucigrama</button>
+      <button class="tab" data-section="encadenadas"><i data-lucide="link" class="w-3.5 h-3.5 text-cyan-300"></i>Encadenadas</button>
+      <button class="tab" data-section="dados"><i data-lucide="dice-5" class="w-3.5 h-3.5 text-orange-300"></i>Dados</button>
+      <button class="tab" data-section="sobre"><i data-lucide="mail" class="w-3.5 h-3.5 text-violet-300"></i>Sobre Sellado</button>
+      <button class="tab" data-section="ahorcado"><i data-lucide="heart-crack" class="w-3.5 h-3.5 text-red-300"></i>Ahorcado</button>
+      <button class="tab" data-section="conecta4"><i data-lucide="circle-dot" class="w-3.5 h-3.5 text-blue-400"></i>Conecta 4</button>
     </div>
   </nav>
 
@@ -1052,6 +1148,248 @@
         </button>
         <button id="flota-restart" class="btn-ghost py-1.5 px-4 text-xs flex items-center gap-1.5 mx-auto">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Reiniciar Partida
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ADIVINA LA CANCIÓN                        -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-cancion" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>🎵</span> Adivina la Canción
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Escribe una letra con huecos y que tu pareja la complete.</p>
+      </div>
+      <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto w-full">
+        <!-- Panel compositor -->
+        <div class="glass rounded-2xl p-5 flex flex-col gap-3">
+          <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Componer pista</div>
+          <input id="cancion-title" type="text" class="input text-xs" placeholder="Nombre de la canción..." maxlength="60">
+          <textarea id="cancion-lyrics" class="input resize-none text-xs" rows="5" placeholder="Escribe la letra. Usa ___ (tres guiones) para marcar los huecos que debe adivinar tu pareja.&#10;Ej: Tú eres el ___ de mi vida"></textarea>
+          <button id="cancion-send-btn" class="btn-primary text-xs py-2">Enviar pista 🎤</button>
+          <div id="cancion-sent-msg" class="text-[10px] text-green-400 hidden text-center">¡Pista enviada! Tu pareja tiene que adivinarla.</div>
+        </div>
+        <!-- Panel adivinador -->
+        <div class="glass rounded-2xl p-5 flex flex-col gap-3">
+          <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Adivinar la canción</div>
+          <div id="cancion-puzzle-display" class="text-sm leading-relaxed font-display min-h-[80px] text-purple-200/70 italic">Esperando que tu pareja envíe una pista…</div>
+          <div id="cancion-inputs-area" class="flex flex-col gap-2"></div>
+          <button id="cancion-check-btn" class="btn-primary text-xs py-2 hidden">Comprobar respuestas ✓</button>
+          <div id="cancion-result-msg" class="text-[10px] text-center hidden"></div>
+          <button id="cancion-reveal-btn" class="btn-ghost text-xs py-1.5 hidden">Ver respuesta completa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CRUCIGRAMA DE RECUERDOS                   -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-crucigrama" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>📝</span> Crucigrama de Recuerdos
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Rellena las casillas con palabras especiales para los dos.</p>
+      </div>
+      <div class="max-w-2xl mx-auto w-full flex flex-col gap-4">
+        <div class="glass rounded-2xl p-4">
+          <div class="text-[10px] uppercase tracking-widest font-semibold mb-3" style="color: var(--muted)">Tablero</div>
+          <div id="crucigrama-board" class="overflow-x-auto"></div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="text-[10px] uppercase tracking-widest font-semibold mb-3" style="color: var(--muted)">Pistas</div>
+          <div id="crucigrama-clues" class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs"></div>
+        </div>
+        <div class="flex justify-center gap-3">
+          <button id="crucigrama-check-btn" class="btn-primary text-xs py-2 px-5">Comprobar ✓</button>
+          <button id="crucigrama-reset-btn" class="btn-ghost text-xs py-2 px-5">Reiniciar</button>
+        </div>
+        <div id="crucigrama-result" class="text-center text-sm font-semibold hidden"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- PALABRAS ENCADENADAS                      -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-encadenadas" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>🔗</span> Palabras Encadenadas
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Cada palabra debe empezar por la última letra de la anterior.</p>
+      </div>
+      <div class="max-w-md mx-auto w-full flex flex-col gap-4">
+        <div class="glass rounded-2xl p-4 flex flex-col gap-2">
+          <div class="flex items-center justify-between mb-1">
+            <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Categoría activa</div>
+            <div id="enc-category-badge" class="text-xs px-2 py-0.5 rounded-full glass border border-white/10">—</div>
+          </div>
+          <div id="enc-last-word" class="text-center font-display text-3xl my-2" style="color: var(--accent)">—</div>
+          <div class="text-center text-[10px] mb-1" style="color: var(--muted)">Última letra: <span id="enc-last-letter" class="font-bold text-amber-300">—</span></div>
+          <div class="flex gap-2">
+            <input id="enc-word-input" type="text" class="input text-sm" placeholder="Tu palabra…" maxlength="30" autocomplete="off">
+            <button id="enc-send-btn" class="btn-primary px-4 py-2 text-xs">Enviar</button>
+          </div>
+          <div id="enc-error-msg" class="text-[10px] text-red-400 hidden text-center"></div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Cadena (<span id="enc-count">0</span> palabras)</div>
+            <div class="flex gap-1.5">
+              <button id="enc-category-btn" class="btn-ghost text-xs py-1 px-2">Cambiar categoría</button>
+              <button id="enc-reset-btn" class="btn-ghost text-xs py-1 px-2">Nueva partida</button>
+            </div>
+          </div>
+          <div id="enc-chain" class="flex flex-wrap gap-2 max-h-[180px] overflow-y-auto inner-scroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- DADOS DEL AMOR                            -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-dados" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>🎲</span> Dados del Amor
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Lanza y cumple lo que dicten los dados.</p>
+      </div>
+      <div class="max-w-sm mx-auto w-full flex flex-col items-center gap-5">
+        <div class="flex gap-8 items-end justify-center">
+          <!-- Dado 1: Acción -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Acción</div>
+            <div id="dado1" class="w-24 h-24 rounded-2xl glass flex items-center justify-center text-5xl border border-white/15 shadow-xl transition-all duration-300">🎲</div>
+            <div id="dado1-label" class="text-xs text-center font-semibold text-pink-300 h-4">—</div>
+          </div>
+          <!-- Dado 2: Intensidad -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Intensidad</div>
+            <div id="dado2" class="w-24 h-24 rounded-2xl glass flex items-center justify-center text-5xl border border-white/15 shadow-xl transition-all duration-300">🎲</div>
+            <div id="dado2-label" class="text-xs text-center font-semibold text-amber-300 h-4">—</div>
+          </div>
+        </div>
+        <div id="dados-result" class="glass rounded-2xl px-6 py-4 text-center font-display text-base max-w-xs text-pink-200 min-h-[56px] flex items-center justify-center">Lanza los dados para descubrir tu reto 💕</div>
+        <button id="dados-roll-btn" class="btn-primary py-2 px-8 text-sm flex items-center gap-2">🎲 Lanzar dados</button>
+        <div class="text-[10px]" style="color: var(--muted)">Lanzado por: <span id="dados-last-roller" class="text-pink-300">—</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SOBRE SELLADO                             -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-sobre" class="section">
+      <div class="text-center mb-4 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>💌</span> Sobre Sellado
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Escribe una predicción. Solo se puede leer en la fecha indicada.</p>
+      </div>
+      <div class="max-w-lg mx-auto w-full flex flex-col gap-4">
+        <!-- Redactar predicción -->
+        <div class="glass rounded-2xl p-5 flex flex-col gap-3" id="sobre-write-panel">
+          <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Nueva predicción</div>
+          <textarea id="sobre-text" class="input resize-none text-xs" rows="4" placeholder="Escribe tu predicción para el futuro… Ej: En 6 meses habremos viajado juntos a…" maxlength="300"></textarea>
+          <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+            <div class="flex flex-col gap-1 flex-1">
+              <label class="text-[10px] font-semibold" style="color: var(--muted)">Fecha de apertura</label>
+              <input id="sobre-open-date" type="date" class="input text-xs py-2">
+            </div>
+            <button id="sobre-send-btn" class="btn-primary text-xs py-2 px-5 mt-auto">Sellar sobre 🔒</button>
+          </div>
+        </div>
+        <!-- Lista de sobres -->
+        <div class="glass rounded-2xl p-4 flex flex-col gap-2">
+          <div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color: var(--muted)">Sobres guardados</div>
+          <div id="sobre-list" class="flex flex-col gap-3 max-h-[300px] overflow-y-auto inner-scroll"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- AHORCADO DE PAREJAS                       -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-ahorcado" class="section">
+      <div class="text-center mb-3 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>❤️‍🔥</span> Ahorcado de Parejas
+        </h2>
+        <p class="text-[10px] mt-0.5" style="color: var(--muted)">Piensa en algo especial para los dos y que tu pareja lo adivine.</p>
+      </div>
+      <div class="max-w-md mx-auto w-full flex flex-col gap-4">
+        <!-- Panel para proponer palabra -->
+        <div id="ahorcado-propose-panel" class="glass rounded-2xl p-4 flex flex-col gap-2">
+          <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Proponer palabra secreta</div>
+          <div class="flex gap-2">
+            <input id="ahorcado-word-input" type="text" class="input text-xs uppercase tracking-widest" placeholder="PALABRA (solo letras)" maxlength="20" autocomplete="off">
+            <input id="ahorcado-hint-input" type="text" class="input text-xs" placeholder="Pista (opcional)" maxlength="50" autocomplete="off">
+          </div>
+          <button id="ahorcado-propose-btn" class="btn-primary text-xs py-2">Enviar palabra secreta 🤫</button>
+        </div>
+        <!-- Panel del juego -->
+        <div id="ahorcado-game-panel" class="glass rounded-2xl p-5 flex flex-col items-center gap-4">
+          <!-- Figura -->
+          <svg id="ahorcado-svg" viewBox="0 0 120 130" class="w-32 h-32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <line x1="10" y1="125" x2="110" y2="125" class="text-white/20"/>
+            <line x1="30" y1="125" x2="30" y2="10" class="text-white/20"/>
+            <line x1="30" y1="10" x2="75" y2="10" class="text-white/20"/>
+            <line x1="75" y1="10" x2="75" y2="28" class="text-white/20"/>
+            <!-- Partes del cuerpo: id=ah-head, ah-body, ah-la, ah-ra, ah-ll, ah-rl -->
+            <circle id="ah-head" cx="75" cy="38" r="10" class="text-pink-400" style="display:none"/>
+            <line id="ah-body" x1="75" y1="48" x2="75" y2="80" class="text-pink-400" style="display:none"/>
+            <line id="ah-la" x1="75" y1="58" x2="55" y2="72" class="text-pink-400" style="display:none"/>
+            <line id="ah-ra" x1="75" y1="58" x2="95" y2="72" class="text-pink-400" style="display:none"/>
+            <line id="ah-ll" x1="75" y1="80" x2="57" y2="100" class="text-pink-400" style="display:none"/>
+            <line id="ah-rl" x1="75" y1="80" x2="93" y2="100" class="text-pink-400" style="display:none"/>
+          </svg>
+          <div id="ahorcado-hint-display" class="text-[10px] italic text-purple-200/60 hidden"></div>
+          <!-- Palabra oculta -->
+          <div id="ahorcado-word-display" class="flex gap-2 flex-wrap justify-center font-display text-2xl tracking-widest my-1"></div>
+          <!-- Letras usadas -->
+          <div id="ahorcado-letters" class="flex flex-wrap gap-1.5 justify-center max-w-[340px]"></div>
+          <div id="ahorcado-status-msg" class="text-sm font-semibold text-center hidden"></div>
+          <button id="ahorcado-new-btn" class="btn-ghost text-xs py-1.5 px-4 hidden">Nueva partida</button>
+        </div>
+        <div class="text-center text-[10px]" style="color: var(--muted)">
+          Turno: <span id="ahorcado-proposer-label" class="text-pink-300">—</span> propone · <span id="ahorcado-guesser-label" class="text-amber-300">—</span> adivina
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- CONECTA 4                                 -->
+    <!-- ══════════════════════════════════════════ -->
+    <div id="section-conecta4" class="section">
+      <div class="text-center mb-3 flex-shrink-0">
+        <h2 class="font-display text-2xl font-light flex items-center justify-center gap-2">
+          <span>💗</span> Conecta 4 del Amor
+        </h2>
+        <div class="text-[10px] mt-0.5" style="color: var(--muted)" id="c4-turn-display">Cargando partida…</div>
+      </div>
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 overflow-hidden">
+        <!-- Indicadores de jugadores -->
+        <div class="flex items-center gap-6 text-xs">
+          <div class="flex items-center gap-1.5" id="c4-p1-indicator">
+            <span class="w-4 h-4 rounded-full inline-block" style="background: var(--accent)"></span>
+            <span id="c4-p1-name">—</span>
+          </div>
+          <div class="font-display text-lg" style="color: var(--muted)">vs</div>
+          <div class="flex items-center gap-1.5" id="c4-p2-indicator">
+            <span class="w-4 h-4 rounded-full inline-block" style="background: var(--accent-2)"></span>
+            <span id="c4-p2-name">—</span>
+          </div>
+        </div>
+        <!-- Tablero 7x6 -->
+        <div class="glass rounded-2xl p-3 shadow-xl">
+          <div id="c4-board" class="grid gap-1.5" style="grid-template-columns: repeat(7, 1fr); width: min(350px, 90vw)">
+            <!-- 42 celdas generadas por JS -->
+          </div>
+        </div>
+        <button id="c4-restart-btn" class="btn-ghost py-1.5 px-5 text-xs flex items-center gap-1.5">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>Nueva partida
         </button>
       </div>
     </div>
@@ -2214,6 +2552,13 @@ function renderAll() {
   renderAlbumGallery();
   renderSharedPuzzle();
   renderSharedBattleship();
+  renderCancion();
+  renderCrucigrama();
+  encRender();
+  renderDados();
+  renderSobres();
+  renderAhorcado();
+  renderConecta4();
   refreshIcons();
 }
 
@@ -3860,6 +4205,593 @@ function copyKey() {
   .catch(() => showToast('Código: ' + state.roomKey));
 }
 
+// ════════════════════════════════════════════
+// ADIVINA LA CANCIÓN
+// ════════════════════════════════════════════
+function cancionSendPista() {
+  const title = (document.getElementById('cancion-title').value || '').trim();
+  const lyrics = (document.getElementById('cancion-lyrics').value || '').trim();
+  if (!lyrics) return showToast('Escribe la letra primero');
+  const holes = (lyrics.match(/___/g) || []).length;
+  if (holes === 0) return showToast('Añade al menos un hueco (___) en la letra');
+  updateState(room => {
+    room.cancion = { title, lyrics, proposer: state.user.name, answers: null, revealed: false, ts: Date.now() };
+  });
+  document.getElementById('cancion-sent-msg').classList.remove('hidden');
+  setTimeout(() => document.getElementById('cancion-sent-msg').classList.add('hidden'), 3000);
+  showToast('Pista enviada 🎤');
+}
+
+function cancionRenderPuzzle(cancionData) {
+  const display = document.getElementById('cancion-puzzle-display');
+  const inputsArea = document.getElementById('cancion-inputs-area');
+  const checkBtn = document.getElementById('cancion-check-btn');
+  const revealBtn = document.getElementById('cancion-reveal-btn');
+  const resultMsg = document.getElementById('cancion-result-msg');
+  if (!cancionData || !cancionData.lyrics) {
+    display.textContent = 'Esperando que tu pareja envíe una pista…';
+    inputsArea.innerHTML = '';
+    checkBtn.classList.add('hidden');
+    revealBtn.classList.add('hidden');
+    return;
+  }
+  if (cancionData.proposer === state.user.name) {
+    display.innerHTML = `<span class="text-amber-300">Tú propusiste esta pista. Tu pareja está adivinando…</span><br><span class="text-xs opacity-60">${cancionData.title ? '🎵 ' + cancionData.title : ''}</span>`;
+    inputsArea.innerHTML = '';
+    checkBtn.classList.add('hidden');
+    revealBtn.classList.remove('hidden');
+    return;
+  }
+  const parts = cancionData.lyrics.split('___');
+  let html = '';
+  parts.forEach((p, i) => {
+    html += `<span class="text-purple-200">${p.replace(/\n/g,'<br>')}</span>`;
+    if (i < parts.length - 1) html += `<input type="text" class="cancion-answer-input input inline-block w-28 py-0.5 px-2 mx-1 text-xs" placeholder="…" data-idx="${i}" style="width:110px">`;
+  });
+  display.innerHTML = cancionData.title ? `<span class="text-amber-300 font-semibold text-xs">🎵 ${cancionData.title}</span><br><br>${html}` : html;
+  inputsArea.innerHTML = '';
+  checkBtn.classList.remove('hidden');
+  revealBtn.classList.remove('hidden');
+  resultMsg.classList.add('hidden');
+  if (cancionData.revealed) cancionRevealFull(cancionData);
+}
+
+function cancionCheckAnswers() {
+  const cancionData = state.room.cancion;
+  if (!cancionData) return;
+  const inputs = document.querySelectorAll('.cancion-answer-input');
+  const parts = cancionData.lyrics.split('___');
+  let correct = 0;
+  inputs.forEach((inp, i) => {
+    const actual = parts[i + 1] ? parts[i + 1].trim().split(/[\s,\.!?]/)[0].toLowerCase().replace(/[^a-záéíóúüñ]/gi,'') : '';
+    const guess = inp.value.trim().toLowerCase().replace(/[^a-záéíóúüñ]/gi,'');
+    if (guess && actual && (guess === actual || actual.includes(guess) || guess.includes(actual))) {
+      inp.style.borderColor = '#4ade80'; correct++;
+    } else if (guess) {
+      inp.style.borderColor = 'var(--accent)';
+    }
+  });
+  const resultMsg = document.getElementById('cancion-result-msg');
+  resultMsg.classList.remove('hidden');
+  if (correct === inputs.length) {
+    resultMsg.textContent = '🎉 ¡Perfecto! Acertaste todos los huecos!';
+    resultMsg.className = 'text-xs text-center text-green-400';
+  } else {
+    resultMsg.textContent = `✅ ${correct}/${inputs.length} correctos. ¡Sigue intentándolo!`;
+    resultMsg.className = 'text-xs text-center text-amber-300';
+  }
+}
+
+function cancionReveal() {
+  const cancionData = state.room.cancion;
+  if (!cancionData) return;
+  cancionRevealFull(cancionData);
+}
+
+function cancionRevealFull(cancionData) {
+  const display = document.getElementById('cancion-puzzle-display');
+  display.innerHTML = `<span class="text-xs text-amber-300 font-semibold">🎵 ${cancionData.title || 'Sin título'}</span><br><br><span class="text-purple-200">${cancionData.lyrics.replace(/___/g,'<span class="text-green-400 font-bold">___</span>').replace(/\n/g,'<br>')}</span>`;
+}
+
+function renderCancion() {
+  cancionRenderPuzzle(state.room.cancion || null);
+}
+
+// ════════════════════════════════════════════
+// CRUCIGRAMA DE RECUERDOS
+// ════════════════════════════════════════════
+const CW_DATA = [
+  // { word, row, col, dir:'H'|'V', clue }
+  { word:'AMOR',    row:0, col:0, dir:'H', clue:'Lo que nos une (4)' },
+  { word:'ALEXA',   row:0, col:0, dir:'V', clue:'Nombre de ella (5)' },
+  { word:'BESOS',   row:2, col:0, dir:'H', clue:'Los damos al saludarnos (5)' },
+  { word:'LUNA',    row:0, col:3, dir:'V', clue:'Brilla de noche para los dos (4)' },
+  { word:'AMOR',    row:4, col:1, dir:'V', clue:'Lo que sentimos (4)' },  // reuse not shown
+];
+
+// Simpler static 5x5 crossword
+const CW = {
+  grid: [
+    ['A','M','O','R','#'],
+    ['L','#','#','U','#'],
+    ['E','B','E','S','O'],
+    ['X','#','#','A','#'],
+    ['A','M','O','R','#'],
+  ],
+  clues: [
+    { n:1, dir:'H', row:0, col:0, text:'Lo que nos une' },
+    { n:1, dir:'V', row:0, col:0, text:'Nombre de ella' },
+    { n:2, dir:'H', row:2, col:1, text:'Los damos al saludarnos (sin A)' },
+    { n:3, dir:'H', row:4, col:0, text:'Lo que sentimos siempre' },
+    { n:2, dir:'V', row:0, col:3, text:'Brilla de noche para los dos' },
+  ]
+};
+
+function crucigramaRender() {
+  const board = document.getElementById('crucigrama-board');
+  const cluesEl = document.getElementById('crucigrama-clues');
+  if (!board) return;
+  const rows = CW.grid.length, cols = CW.grid[0].length;
+  let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols},34px)">`;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const ch = CW.grid[r][c];
+      if (ch === '#') {
+        html += `<div class="cw-cell cw-black"></div>`;
+      } else {
+        const num = CW.clues.find(cl => cl.row===r && cl.col===c);
+        html += `<div class="relative"><input type="text" maxlength="1" class="cw-cell cw-num" data-r="${r}" data-c="${c}" autocomplete="off" spellcheck="false">${num?`<span class="cw-num-label">${num.n}</span>`:''}</div>`;
+      }
+    }
+  }
+  html += '</div>';
+  board.innerHTML = html;
+  const horizontal = CW.clues.filter(cl=>cl.dir==='H');
+  const vertical   = CW.clues.filter(cl=>cl.dir==='V');
+  let clueHtml = `<div><div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color:var(--muted)">Horizontales</div>`;
+  horizontal.forEach(cl => { clueHtml += `<div class="mb-0.5"><span class="text-amber-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; });
+  clueHtml += `</div><div><div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color:var(--muted)">Verticales</div>`;
+  vertical.forEach(cl => { clueHtml += `<div class="mb-0.5"><span class="text-pink-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; });
+  clueHtml += `</div>`;
+  cluesEl.innerHTML = clueHtml;
+  board.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
+    inp.addEventListener('input', e => {
+      inp.value = inp.value.toUpperCase().slice(-1);
+      const r = +inp.dataset.r, c = +inp.dataset.c;
+      const savedAnswers = (state.room.crucigramaAnswers || {});
+      savedAnswers[`${r}_${c}`] = inp.value;
+      updateState(room => { room.crucigramaAnswers = savedAnswers; });
+    });
+  });
+}
+
+function crucigramaCheck() {
+  const inputs = document.querySelectorAll('.cw-cell.cw-num');
+  let correct = 0, total = 0;
+  inputs.forEach(inp => {
+    const r = +inp.dataset.r, c = +inp.dataset.c;
+    const expected = CW.grid[r][c];
+    total++;
+    inp.classList.remove('cw-correct','cw-wrong');
+    if (inp.value === expected) { inp.classList.add('cw-correct'); correct++; }
+    else if (inp.value) { inp.classList.add('cw-wrong'); }
+  });
+  const res = document.getElementById('crucigrama-result');
+  res.classList.remove('hidden');
+  if (correct === total) {
+    res.textContent = '🎉 ¡Crucigrama completado! ¡Campeones del amor!';
+    res.className = 'text-center text-sm font-semibold text-green-400';
+    triggerEmojiExplosion('🏆');
+  } else {
+    res.textContent = `${correct}/${total} correctas. ¡Sigue intentándolo!`;
+    res.className = 'text-center text-sm font-semibold text-amber-300';
+  }
+}
+
+function crucigramaReset() {
+  updateState(room => { room.crucigramaAnswers = {}; });
+  document.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
+    inp.value = '';
+    inp.classList.remove('cw-correct','cw-wrong');
+  });
+  document.getElementById('crucigrama-result').classList.add('hidden');
+}
+
+function renderCrucigrama() {
+  crucigramaRender();
+  const saved = state.room.crucigramaAnswers || {};
+  document.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
+    const key = `${inp.dataset.r}_${inp.dataset.c}`;
+    if (saved[key]) inp.value = saved[key];
+  });
+}
+
+// ════════════════════════════════════════════
+// PALABRAS ENCADENADAS
+// ════════════════════════════════════════════
+const ENC_CATEGORIES = ['Comidas', 'Lugares', 'Cosas románticas', 'Nombres', 'Animales', 'Películas'];
+let encCatIdx = 0;
+
+function encRender() {
+  const chain = state.room.encChain || [];
+  const catI  = state.room.encCatIdx || 0;
+  encCatIdx = catI;
+  document.getElementById('enc-category-badge').textContent = ENC_CATEGORIES[catI % ENC_CATEGORIES.length];
+  document.getElementById('enc-count').textContent = chain.length;
+  if (chain.length === 0) {
+    document.getElementById('enc-last-word').textContent = '—';
+    document.getElementById('enc-last-letter').textContent = '—';
+  } else {
+    const last = chain[chain.length - 1];
+    document.getElementById('enc-last-word').textContent = last.word.toUpperCase();
+    document.getElementById('enc-last-letter').textContent = last.word.slice(-1).toUpperCase();
+  }
+  const chainEl = document.getElementById('enc-chain');
+  chainEl.innerHTML = chain.map(item => {
+    const isMine = item.user === state.user.name;
+    return `<span class="enc-chip ${isMine ? 'mine' : 'theirs'}" title="${item.user}">${item.word}</span>`;
+  }).join('');
+}
+
+function encSendWord() {
+  const input = document.getElementById('enc-word-input');
+  const word = (input.value || '').trim().toLowerCase().replace(/[^a-záéíóúüñ]/gi,'');
+  const errEl = document.getElementById('enc-error-msg');
+  if (!word) return;
+  const chain = state.room.encChain || [];
+  if (chain.length > 0) {
+    const lastLetter = chain[chain.length - 1].word.slice(-1).toLowerCase();
+    if (word[0] !== lastLetter) {
+      errEl.textContent = `⚠ La palabra debe empezar por "${lastLetter.toUpperCase()}"`;
+      errEl.classList.remove('hidden');
+      setTimeout(() => errEl.classList.add('hidden'), 2500);
+      return;
+    }
+    if (chain.some(c => c.word === word)) {
+      errEl.textContent = '⚠ Esa palabra ya fue usada';
+      errEl.classList.remove('hidden');
+      setTimeout(() => errEl.classList.add('hidden'), 2500);
+      return;
+    }
+  }
+  errEl.classList.add('hidden');
+  const newChain = [...chain, { word, user: state.user.name }];
+  updateState(room => { room.encChain = newChain; });
+  input.value = '';
+}
+
+function encReset() {
+  updateState(room => { room.encChain = []; });
+}
+
+function encNextCategory() {
+  const next = ((state.room.encCatIdx || 0) + 1) % ENC_CATEGORIES.length;
+  updateState(room => { room.encCatIdx = next; room.encChain = []; });
+  showToast(`Categoría: ${ENC_CATEGORIES[next]}`);
+}
+
+// ════════════════════════════════════════════
+// DADOS DEL AMOR
+// ════════════════════════════════════════════
+const DADO1_FACES = [
+  { emoji:'💋', label:'Beso' },
+  { emoji:'🫂', label:'Abrazo' },
+  { emoji:'💌', label:'Mensaje bonito' },
+  { emoji:'🎁', label:'Sorpresa' },
+  { emoji:'🕯️', label:'Cena romántica' },
+  { emoji:'🎶', label:'Canción para el otro' },
+];
+const DADO2_FACES = [
+  { emoji:'1️⃣', label:'×1 vez' },
+  { emoji:'2️⃣', label:'×2 veces' },
+  { emoji:'3️⃣', label:'×3 veces' },
+  { emoji:'⭐', label:'larga y especial' },
+  { emoji:'🔥', label:'súper intensa' },
+  { emoji:'🌙', label:'esta noche' },
+];
+
+function dadosRoll() {
+  const d1 = DADO1_FACES[Math.floor(Math.random() * 6)];
+  const d2 = DADO2_FACES[Math.floor(Math.random() * 6)];
+  updateState(room => {
+    room.dados = { d1, d2, roller: state.user.name, ts: Date.now() };
+  });
+}
+
+function renderDados() {
+  const d = state.room.dados;
+  const el1 = document.getElementById('dado1');
+  const el2 = document.getElementById('dado2');
+  const res = document.getElementById('dados-result');
+  const roller = document.getElementById('dados-last-roller');
+  if (!d) return;
+  el1.classList.add('dado-rolling');
+  el2.classList.add('dado-rolling');
+  setTimeout(() => {
+    el1.classList.remove('dado-rolling');
+    el2.classList.remove('dado-rolling');
+    el1.textContent = d.d1.emoji;
+    el2.textContent = d.d2.emoji;
+    document.getElementById('dado1-label').textContent = d.d1.label;
+    document.getElementById('dado2-label').textContent = d.d2.label;
+    res.textContent = `${d.d1.label} — ${d.d2.label} 💕`;
+    if (roller) roller.textContent = d.roller || '—';
+  }, 520);
+  if (roller) roller.textContent = d.roller || '—';
+}
+
+// ════════════════════════════════════════════
+// SOBRE SELLADO
+// ════════════════════════════════════════════
+function sobreSend() {
+  const text = (document.getElementById('sobre-text').value || '').trim();
+  const openDate = document.getElementById('sobre-open-date').value;
+  if (!text) return showToast('Escribe tu predicción primero');
+  if (!openDate) return showToast('Selecciona la fecha de apertura');
+  if (new Date(openDate) <= new Date()) return showToast('La fecha debe ser futura');
+  const sobre = { id: Date.now(), text, openDate, author: state.user.name };
+  const list = [...(state.room.sobres || []), sobre];
+  updateState(room => { room.sobres = list; });
+  document.getElementById('sobre-text').value = '';
+  document.getElementById('sobre-open-date').value = '';
+  showToast('Sobre sellado 💌');
+}
+
+function renderSobres() {
+  const list = state.room.sobres || [];
+  const el = document.getElementById('sobre-list');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div class="text-xs text-white/30 text-center py-4">No hay sobres sellados todavía. ¡Escribe una predicción! 💌</div>';
+    return;
+  }
+  const today = new Date(); today.setHours(0,0,0,0);
+  el.innerHTML = list.map(s => {
+    const open = new Date(s.openDate + 'T00:00:00');
+    const canOpen = today >= open;
+    const daysLeft = Math.ceil((open - today) / 86400000);
+    return `<div class="sobre-item ${canOpen?'unlocked':'locked'}" onclick="${canOpen ? `sobreOpen(${s.id})` : ''}">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">${canOpen ? '💌' : '🔒'}</span>
+          <div>
+            <div class="text-xs font-semibold ${canOpen ? 'text-green-400' : 'text-white/60'}">
+              ${canOpen ? 'Puedes abrirlo' : `Se abre el ${s.openDate} (${daysLeft}d)`}
+            </div>
+            <div class="text-[10px]" style="color:var(--muted)">Por ${s.author}</div>
+          </div>
+        </div>
+        ${canOpen ? '<span class="text-[10px] text-green-400">Toca para leer</span>' : ''}
+      </div>
+      ${canOpen && s.opened ? `<div class="mt-2 text-xs text-purple-200/80 italic">"${s.text}"</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function sobreOpen(id) {
+  const list = (state.room.sobres || []).map(s => s.id === id ? {...s, opened: true} : s);
+  updateState(room => { room.sobres = list; });
+  triggerEmojiExplosion('💌');
+}
+
+// ════════════════════════════════════════════
+// AHORCADO DE PAREJAS
+// ════════════════════════════════════════════
+const AH_PARTS = ['ah-head','ah-body','ah-la','ah-ra','ah-ll','ah-rl'];
+
+function ahorcadoPropose() {
+  const wordRaw = (document.getElementById('ahorcado-word-input').value || '').trim().toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ]/gi,'');
+  const hint = (document.getElementById('ahorcado-hint-input').value || '').trim();
+  if (wordRaw.length < 2) return showToast('La palabra debe tener al menos 2 letras');
+  updateState(room => {
+    room.ahorcado = {
+      word: wordRaw,
+      hint,
+      proposer: state.user.name,
+      guesses: [],
+      finished: false,
+      ts: Date.now()
+    };
+  });
+  document.getElementById('ahorcado-word-input').value = '';
+  document.getElementById('ahorcado-hint-input').value = '';
+  showToast('Palabra enviada 🤫');
+}
+
+function ahorcadoNewGame() {
+  updateState(room => { room.ahorcado = null; });
+}
+
+function ahorcadoGuess(letter) {
+  const ah = state.room.ahorcado;
+  if (!ah || ah.finished || ah.proposer === state.user.name) return;
+  if ((ah.guesses || []).includes(letter)) return;
+  const guesses = [...(ah.guesses || []), letter];
+  const word = ah.word;
+  const wrong = guesses.filter(g => !word.includes(g)).length;
+  const allRevealed = [...word].every(ch => guesses.includes(ch));
+  const finished = wrong >= 6 || allRevealed;
+  updateState(room => {
+    room.ahorcado = { ...ah, guesses, finished, won: allRevealed };
+  });
+}
+
+function renderAhorcado() {
+  const ah = state.room.ahorcado;
+  const proposePanel = document.getElementById('ahorcado-propose-panel');
+  const gamePanel = document.getElementById('ahorcado-game-panel');
+  const propLabel = document.getElementById('ahorcado-proposer-label');
+  const guessLabel = document.getElementById('ahorcado-guesser-label');
+  const names = ['Gabriel','Alexa'];
+  if (!ah) {
+    proposePanel.classList.remove('hidden');
+    gamePanel.classList.remove('hidden');
+    document.getElementById('ahorcado-word-display').innerHTML = '';
+    document.getElementById('ahorcado-letters').innerHTML = '';
+    document.getElementById('ahorcado-status-msg').classList.add('hidden');
+    document.getElementById('ahorcado-new-btn').classList.add('hidden');
+    document.getElementById('ahorcado-hint-display').classList.add('hidden');
+    AH_PARTS.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    propLabel.textContent = '—'; guessLabel.textContent = '—';
+    return;
+  }
+  proposePanel.classList.add('hidden');
+  gamePanel.classList.remove('hidden');
+  propLabel.textContent = ah.proposer;
+  guessLabel.textContent = names.find(n => n !== ah.proposer) || '—';
+  const guesses = ah.guesses || [];
+  const word = ah.word;
+  const wrong = guesses.filter(g => !word.includes(g)).length;
+  // Draw figure
+  AH_PARTS.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = i < wrong ? '' : 'none';
+  });
+  // Word
+  const wordDisplay = document.getElementById('ahorcado-word-display');
+  wordDisplay.innerHTML = [...word].map(ch =>
+    `<span class="${guesses.includes(ch)?'text-green-400':'text-white/20'} border-b-2 ${guesses.includes(ch)?'border-green-400':'border-white/20'} w-8 text-center inline-block pb-0">${guesses.includes(ch)?ch:'_'}</span>`
+  ).join('');
+  // Hint
+  const hintEl = document.getElementById('ahorcado-hint-display');
+  if (ah.hint) { hintEl.textContent = `Pista: ${ah.hint}`; hintEl.classList.remove('hidden'); }
+  else { hintEl.classList.add('hidden'); }
+  // Letters keyboard
+  const lettersEl = document.getElementById('ahorcado-letters');
+  const alphabet = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('');
+  const isGuesser = ah.proposer !== state.user.name;
+  lettersEl.innerHTML = alphabet.map(l => {
+    const used = guesses.includes(l);
+    const hit = used && word.includes(l);
+    const miss = used && !word.includes(l);
+    return `<button class="ah-letter-btn ${hit?'hit':''} ${miss?'miss':''}" ${(used||ah.finished||!isGuesser)?'disabled':''} onclick="ahorcadoGuess('${l}')">${l}</button>`;
+  }).join('');
+  // Status
+  const statusEl = document.getElementById('ahorcado-status-msg');
+  const newBtn = document.getElementById('ahorcado-new-btn');
+  if (ah.finished) {
+    newBtn.classList.remove('hidden');
+    statusEl.classList.remove('hidden');
+    if (ah.won) {
+      statusEl.textContent = `🎉 ¡${guessLabel.textContent} lo adivinó! La palabra era "${word}"`;
+      statusEl.style.color = '#4ade80';
+    } else {
+      statusEl.textContent = `💔 Game over. La palabra era "${word}"`;
+      statusEl.style.color = 'var(--accent)';
+    }
+  } else {
+    statusEl.classList.add('hidden');
+    newBtn.classList.add('hidden');
+    if (!isGuesser) {
+      const info = document.createElement('div');
+    }
+  }
+}
+
+// ════════════════════════════════════════════
+// CONECTA 4 DEL AMOR
+// ════════════════════════════════════════════
+const C4_ROWS = 6, C4_COLS = 7;
+
+function c4Restart() {
+  updateState(room => {
+    room.conecta4 = {
+      board: Array(C4_ROWS * C4_COLS).fill(0),
+      turn: 1,   // 1 = Gabriel (p1), 2 = Alexa (p2)
+      finished: false,
+      winner: 0
+    };
+  });
+}
+
+function c4Drop(col) {
+  const g = state.room.conecta4;
+  if (!g || g.finished) return;
+  const myPlayer = state.user.name === 'Gabriel' ? 1 : 2;
+  if (g.turn !== myPlayer) return showToast('No es tu turno');
+  const board = [...g.board];
+  let row = -1;
+  for (let r = C4_ROWS - 1; r >= 0; r--) {
+    if (board[r * C4_COLS + col] === 0) { row = r; break; }
+  }
+  if (row === -1) return showToast('Columna llena');
+  board[row * C4_COLS + col] = myPlayer;
+  const { winner, winCells } = c4CheckWinner(board);
+  const finished = winner > 0 || board.every(c => c !== 0);
+  updateState(room => {
+    room.conecta4 = { board, turn: myPlayer === 1 ? 2 : 1, finished, winner, winCells: winCells || [] };
+  });
+}
+
+function c4CheckWinner(board) {
+  const check = (cells) => {
+    if (cells.some(i => i < 0 || i >= C4_ROWS * C4_COLS)) return false;
+    const v = board[cells[0]];
+    return v !== 0 && cells.every(i => board[i] === v);
+  };
+  for (let r = 0; r < C4_ROWS; r++) {
+    for (let c = 0; c < C4_COLS; c++) {
+      const i = r * C4_COLS + c;
+      const horiz = [i, i+1, i+2, i+3];
+      const vert  = [i, i+C4_COLS, i+C4_COLS*2, i+C4_COLS*3];
+      const diagR = [i, i+C4_COLS+1, i+C4_COLS*2+2, i+C4_COLS*3+3];
+      const diagL = [i, i+C4_COLS-1, i+C4_COLS*2-2, i+C4_COLS*3-3];
+      for (const cells of [horiz, vert, diagR, diagL]) {
+        if (c + (cells === horiz || cells === diagR ? 3 : cells === diagL ? -3 : 0) < 0 ||
+            c + (cells === horiz || cells === diagR ? 3 : cells === diagL ? -3 : 0) >= C4_COLS) {
+          if (cells === horiz || cells === diagR || cells === diagL) continue;
+        }
+        if (check(cells)) return { winner: board[cells[0]], winCells: cells };
+      }
+    }
+  }
+  return { winner: 0, winCells: [] };
+}
+
+function renderConecta4() {
+  const g = state.room.conecta4;
+  const boardEl = document.getElementById('c4-board');
+  const turnEl  = document.getElementById('c4-turn-display');
+  const p1name  = document.getElementById('c4-p1-name');
+  const p2name  = document.getElementById('c4-p2-name');
+  if (!boardEl) return;
+  p1name.textContent = 'Gabriel';
+  p2name.textContent = 'Alexa';
+  if (!g) {
+    boardEl.innerHTML = '<div class="col-span-7 text-center text-xs py-4 text-white/30">Pulsa "Nueva partida" para empezar 💗</div>';
+    turnEl.textContent = '—';
+    return;
+  }
+  const board = g.board;
+  const winCells = g.winCells || [];
+  const myPlayer = state.user.name === 'Gabriel' ? 1 : 2;
+  let cells = '';
+  for (let r = 0; r < C4_ROWS; r++) {
+    for (let c = 0; c < C4_COLS; c++) {
+      const idx = r * C4_COLS + c;
+      const val = board[idx];
+      const isWin = winCells.includes(idx);
+      const cls = val === 1 ? 'p1' : val === 2 ? 'p2' : '';
+      const winCls = isWin ? 'winning' : '';
+      const canPlay = !g.finished && val === 0 && g.turn === myPlayer;
+      cells += `<div class="c4-cell ${cls} ${winCls}" ${canPlay ? `onclick="c4Drop(${c})"` : ''}></div>`;
+    }
+  }
+  boardEl.innerHTML = cells;
+  if (g.finished) {
+    if (g.winner) {
+      const wname = g.winner === 1 ? 'Gabriel' : 'Alexa';
+      turnEl.textContent = `🎉 ¡${wname} gana! Pulsa nueva partida.`;
+      if (g.winner === myPlayer) triggerEmojiExplosion('🏆');
+    } else {
+      turnEl.textContent = '🤝 ¡Empate! Bien jugado.';
+    }
+  } else {
+    const turnName = g.turn === 1 ? 'Gabriel' : 'Alexa';
+    turnEl.textContent = g.turn === myPlayer ? '¡Tu turno! Elige columna 💗' : `Turno de ${turnName}…`;
+  }
+}
+
 // ===== EVENTOS DOM =====
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Validar sesión inmediatamente antes de procesar la interfaz
@@ -3986,6 +4918,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Hundir la Flota
   document.getElementById('flota-confirm-btn')?.addEventListener('click', confirmBattleshipShips);
   document.getElementById('flota-restart')?.addEventListener('click', initSharedBattleship);
+
+  // ── Nuevos juegos ──
+  document.getElementById('cancion-send-btn')?.addEventListener('click', cancionSendPista);
+  document.getElementById('cancion-check-btn')?.addEventListener('click', cancionCheckAnswers);
+  document.getElementById('cancion-reveal-btn')?.addEventListener('click', cancionReveal);
+
+  document.getElementById('crucigrama-check-btn')?.addEventListener('click', crucigramaCheck);
+  document.getElementById('crucigrama-reset-btn')?.addEventListener('click', crucigramaReset);
+
+  document.getElementById('enc-send-btn')?.addEventListener('click', encSendWord);
+  document.getElementById('enc-word-input')?.addEventListener('keypress', e => { if(e.key==='Enter') encSendWord(); });
+  document.getElementById('enc-reset-btn')?.addEventListener('click', encReset);
+  document.getElementById('enc-category-btn')?.addEventListener('click', encNextCategory);
+
+  document.getElementById('dados-roll-btn')?.addEventListener('click', dadosRoll);
+
+  document.getElementById('sobre-send-btn')?.addEventListener('click', sobreSend);
+
+  document.getElementById('ahorcado-propose-btn')?.addEventListener('click', ahorcadoPropose);
+  document.getElementById('ahorcado-new-btn')?.addEventListener('click', ahorcadoNewGame);
+
+  document.getElementById('c4-restart-btn')?.addEventListener('click', c4Restart);
 
   initApp();
 });
