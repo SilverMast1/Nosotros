@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -598,6 +598,60 @@
     80%{ transform: rotate(6deg) scale(1.05); }
   }
   .dado-rolling { animation: shake 0.5s ease-in-out; }
+  
+  .dados-3d-scene {
+    width: 90px;
+    height: 90px;
+    perspective: 500px;
+    margin: 10px auto;
+  }
+  
+  .dado-3d {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  
+  .face-3d {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 700;
+    border-radius: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #240d2f 0%, #17071e 100%);
+    box-shadow: inset 0 0 15px rgba(255, 74, 118, 0.2), 0 5px 15px rgba(0, 0, 0, 0.4);
+    backface-visibility: hidden;
+  }
+  
+  .face-3d-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 600;
+    margin-top: 4px;
+    text-align: center;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Posicionamiento 3D de las caras */
+  .face-1 { transform: rotateY(0deg) translateZ(45px); }
+  .face-2 { transform: rotateY(180deg) translateZ(45px); }
+  .face-3 { transform: rotateY(90deg) translateZ(45px); }
+  .face-4 { transform: rotateY(-90deg) translateZ(45px); }
+  .face-5 { transform: rotateX(90deg) translateZ(45px); }
+  .face-6 { transform: rotateX(-90deg) translateZ(45px); }
 
   /* ── Ahorcado ── */
   .ah-letter-btn {
@@ -614,6 +668,23 @@
   .ah-letter-btn:disabled { opacity: 0.3; cursor: default; }
   .ah-letter-btn.hit { background: rgba(74,222,128,0.12); border-color: #4ade80; color: #4ade80; }
   .ah-letter-btn.miss { background: rgba(255,74,118,0.08); border-color: var(--accent); color: var(--accent); }
+  
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .ah-heart-svg {
+    transform-origin: center;
+    animation: heartbeat 2s infinite ease-in-out;
+  }
+  .ah-heart-part {
+    transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .ah-heart-part.broken {
+    opacity: 0.15;
+    transform: translateY(15px) scale(0.85) rotate(10deg);
+    filter: grayscale(1);
+  }
 
   /* ── Conecta 4 ── */
   .c4-cell {
@@ -622,13 +693,46 @@
     background: rgba(255,255,255,0.05);
     border: 2px solid rgba(255,255,255,0.07);
     cursor: pointer;
-    transition: background 0.25s, transform 0.15s, border-color 0.25s;
+    position: relative;
+    overflow: hidden;
   }
-  .c4-cell:hover { transform: scale(1.08); border-color: rgba(255,255,255,0.25); }
-  .c4-cell.p1 { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(255,74,118,0.5); cursor: default; }
-  .c4-cell.p2 { background: var(--accent-2); border-color: var(--accent-2); box-shadow: 0 0 8px rgba(255,181,71,0.5); cursor: default; }
-  .c4-cell.winning { animation: c4pulse 0.8s ease-in-out infinite alternate; }
-  @keyframes c4pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+  .c4-cell:hover:not(.p1):not(.p2) { transform: scale(1.04); border-color: rgba(255,255,255,0.2); }
+  
+  .c4-token {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .c4-token.p1 { 
+    background: var(--accent); 
+    box-shadow: inset 0 2px 5px rgba(255,255,255,0.3), 0 0 8px rgba(255,74,118,0.5); 
+  }
+  .c4-token.p2 { 
+    background: var(--accent-2); 
+    box-shadow: inset 0 2px 5px rgba(255,255,255,0.3), 0 0 8px rgba(255,181,71,0.5); 
+  }
+  
+  @keyframes c4WinPulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.1); filter: brightness(1.3) drop-shadow(0 0 10px currentColor); }
+  }
+  .c4-cell.winning .c4-token {
+    animation: c4WinPulse 0.6s ease-in-out infinite alternate;
+  }
+  
+  @keyframes dropToken {
+    0% { transform: translateY(-300px); }
+    60% { transform: translateY(0); }
+    80% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+  }
+  .c4-token.animate-drop {
+    animation: dropToken 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+  }
 
   /* ── Sobre sellado ── */
   .sobre-item {
@@ -1167,6 +1271,7 @@
         <div class="glass rounded-2xl p-5 flex flex-col gap-3">
           <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Componer pista</div>
           <input id="cancion-title" type="text" class="input text-xs" placeholder="Nombre de la canción..." maxlength="60">
+          <input id="cancion-media" type="text" class="input text-xs" placeholder="Enlace opcional (YouTube o Spotify)..." maxlength="150">
           <textarea id="cancion-lyrics" class="input resize-none text-xs" rows="5" placeholder="Escribe la letra. Usa ___ (tres guiones) para marcar los huecos que debe adivinar tu pareja.&#10;Ej: Tú eres el ___ de mi vida"></textarea>
           <button id="cancion-send-btn" class="btn-primary text-xs py-2">Enviar pista 🎤</button>
           <div id="cancion-sent-msg" class="text-[10px] text-green-400 hidden text-center">¡Pista enviada! Tu pareja tiene que adivinarla.</div>
@@ -1178,6 +1283,7 @@
           <div id="cancion-inputs-area" class="flex flex-col gap-2"></div>
           <button id="cancion-check-btn" class="btn-primary text-xs py-2 hidden">Comprobar respuestas ✓</button>
           <div id="cancion-result-msg" class="text-[10px] text-center hidden"></div>
+          <div id="cancion-media-container" class="mt-2 hidden"></div>
           <button id="cancion-reveal-btn" class="btn-ghost text-xs py-1.5 hidden">Ver respuesta completa</button>
         </div>
       </div>
@@ -1207,6 +1313,36 @@
           <button id="crucigrama-reset-btn" class="btn-ghost text-xs py-2 px-5">Reiniciar</button>
         </div>
         <div id="crucigrama-result" class="text-center text-sm font-semibold hidden"></div>
+        
+        <!-- Creador de Crucigramas -->
+        <details class="w-full glass rounded-2xl p-4 mt-2">
+          <summary class="text-xs font-semibold cursor-pointer text-center select-none" style="color: var(--muted)">⚙️ Crear un crucigrama para tu pareja</summary>
+          <div class="flex flex-col gap-3 mt-3">
+            <div class="text-[10px] text-purple-200/60 mb-1">Define hasta 4 palabras con sus pistas. Tu pareja deberá adivinarlas en el tablero.</div>
+            <div class="flex flex-col gap-2">
+              <div class="flex gap-2">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[1] uppercase" id="cw-word-0" placeholder="PALABRA 1 (ej: CINE)" maxlength="12" autocomplete="off">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[2]" id="cw-clue-0" placeholder="Pista 1 (ej: Lugar de primera cita)" maxlength="50" autocomplete="off">
+              </div>
+              <div class="flex gap-2">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[1] uppercase" id="cw-word-1" placeholder="PALABRA 2" maxlength="12" autocomplete="off">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[2]" id="cw-clue-1" placeholder="Pista 2" maxlength="50" autocomplete="off">
+              </div>
+              <div class="flex gap-2">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[1] uppercase" id="cw-word-2" placeholder="PALABRA 3" maxlength="12" autocomplete="off">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[2]" id="cw-clue-2" placeholder="Pista 3" maxlength="50" autocomplete="off">
+              </div>
+              <div class="flex gap-2">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[1] uppercase" id="cw-word-3" placeholder="PALABRA 4" maxlength="12" autocomplete="off">
+                <input type="text" class="input py-1.5 px-2 text-xs flex-[2]" id="cw-clue-3" placeholder="Pista 4" maxlength="50" autocomplete="off">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button id="save-custom-cw" class="btn-primary text-xs py-1.5 flex-1">Enviar Crucigrama 🚀</button>
+              <button id="clear-custom-cw" class="btn-ghost text-xs py-1.5 flex-1">Restablecer Clásico</button>
+            </div>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -1222,6 +1358,10 @@
       </div>
       <div class="max-w-md mx-auto w-full flex flex-col gap-4">
         <div class="glass rounded-2xl p-4 flex flex-col gap-2">
+          <div class="flex justify-between items-center border-b border-white/5 pb-2 mb-1">
+            <div id="enc-turn-indicator" class="text-xs font-semibold text-pink-300">Cargando turno...</div>
+            <div id="enc-timer-display" class="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-amber-400 hidden">⏱️ 30s</div>
+          </div>
           <div class="flex items-center justify-between mb-1">
             <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Categoría activa</div>
             <div id="enc-category-badge" class="text-xs px-2 py-0.5 rounded-full glass border border-white/10">—</div>
@@ -1257,24 +1397,62 @@
         </h2>
         <p class="text-[10px] mt-0.5" style="color: var(--muted)">Lanza y cumple lo que dicten los dados.</p>
       </div>
-      <div class="max-w-sm mx-auto w-full flex flex-col items-center gap-5">
-        <div class="flex gap-8 items-end justify-center">
+      <div class="max-w-sm mx-auto w-full flex flex-col items-center gap-4">
+        <div class="flex gap-10 items-end justify-center">
           <!-- Dado 1: Acción -->
           <div class="flex flex-col items-center gap-2">
             <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Acción</div>
-            <div id="dado1" class="w-24 h-24 rounded-2xl glass flex items-center justify-center text-5xl border border-white/15 shadow-xl transition-all duration-300">🎲</div>
+            <div class="dados-3d-scene">
+              <div id="dado1-cube" class="dado-3d">
+                <!-- Caras generadas dinámicamente -->
+              </div>
+            </div>
             <div id="dado1-label" class="text-xs text-center font-semibold text-pink-300 h-4">—</div>
           </div>
           <!-- Dado 2: Intensidad -->
           <div class="flex flex-col items-center gap-2">
             <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Intensidad</div>
-            <div id="dado2" class="w-24 h-24 rounded-2xl glass flex items-center justify-center text-5xl border border-white/15 shadow-xl transition-all duration-300">🎲</div>
+            <div class="dados-3d-scene">
+              <div id="dado2-cube" class="dado-3d">
+                <!-- Caras generadas dinámicamente -->
+              </div>
+            </div>
             <div id="dado2-label" class="text-xs text-center font-semibold text-amber-300 h-4">—</div>
           </div>
         </div>
         <div id="dados-result" class="glass rounded-2xl px-6 py-4 text-center font-display text-base max-w-xs text-pink-200 min-h-[56px] flex items-center justify-center">Lanza los dados para descubrir tu reto 💕</div>
         <button id="dados-roll-btn" class="btn-primary py-2 px-8 text-sm flex items-center gap-2">🎲 Lanzar dados</button>
         <div class="text-[10px]" style="color: var(--muted)">Lanzado por: <span id="dados-last-roller" class="text-pink-300">—</span></div>
+        
+        <!-- Panel de personalización de dados -->
+        <details class="w-full max-w-sm glass rounded-2xl p-4 mt-2">
+          <summary class="text-xs font-semibold cursor-pointer text-center select-none" style="color: var(--muted)">⚙️ Personalizar caras de los dados</summary>
+          <div class="flex flex-col gap-3 mt-3">
+            <div>
+              <div class="text-[9px] uppercase tracking-widest font-semibold mb-1" style="color: var(--muted)">Dado 1: Acciones (Emoji y Texto)</div>
+              <div class="grid grid-cols-2 gap-2" id="custom-dado1-inputs">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-0" placeholder="💋 Beso" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-1" placeholder="🫂 Abrazo" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-2" placeholder="💌 Mensaje" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-3" placeholder="🎁 Sorpresa" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-4" placeholder="🕯️ Cena" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d1-5" placeholder="🎶 Canción" maxlength="20">
+              </div>
+            </div>
+            <div>
+              <div class="text-[9px] uppercase tracking-widest font-semibold mb-1" style="color: var(--muted)">Dado 2: Intensidad (Emoji y Texto)</div>
+              <div class="grid grid-cols-2 gap-2" id="custom-dado2-inputs">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-0" placeholder="1️⃣ ×1 vez" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-1" placeholder="2️⃣ ×2 veces" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-2" placeholder="3️⃣ ×3 veces" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-3" placeholder="⭐ Especial" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-4" placeholder="🔥 Intensa" maxlength="20">
+                <input type="text" class="input py-1.5 px-2 text-xs text-center" id="c-d2-5" placeholder="🌙 Esta noche" maxlength="20">
+              </div>
+            </div>
+            <button id="save-custom-dados" class="btn-ghost text-xs py-1.5 w-full">Guardar personalización</button>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -1331,19 +1509,18 @@
         </div>
         <!-- Panel del juego -->
         <div id="ahorcado-game-panel" class="glass rounded-2xl p-5 flex flex-col items-center gap-4">
-          <!-- Figura -->
-          <svg id="ahorcado-svg" viewBox="0 0 120 130" class="w-32 h-32" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-            <line x1="10" y1="125" x2="110" y2="125" class="text-white/20"/>
-            <line x1="30" y1="125" x2="30" y2="10" class="text-white/20"/>
-            <line x1="30" y1="10" x2="75" y2="10" class="text-white/20"/>
-            <line x1="75" y1="10" x2="75" y2="28" class="text-white/20"/>
-            <!-- Partes del cuerpo: id=ah-head, ah-body, ah-la, ah-ra, ah-ll, ah-rl -->
-            <circle id="ah-head" cx="75" cy="38" r="10" class="text-pink-400" style="display:none"/>
-            <line id="ah-body" x1="75" y1="48" x2="75" y2="80" class="text-pink-400" style="display:none"/>
-            <line id="ah-la" x1="75" y1="58" x2="55" y2="72" class="text-pink-400" style="display:none"/>
-            <line id="ah-ra" x1="75" y1="58" x2="95" y2="72" class="text-pink-400" style="display:none"/>
-            <line id="ah-ll" x1="75" y1="80" x2="57" y2="100" class="text-pink-400" style="display:none"/>
-            <line id="ah-rl" x1="75" y1="80" x2="93" y2="100" class="text-pink-400" style="display:none"/>
+          <!-- Corazón de Amor Agrietándose (SVG) -->
+          <svg id="ahorcado-svg" viewBox="0 0 120 120" class="w-32 h-32 ah-heart-svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path id="ah-part-0" d="M30,30 A15,15 0 0,0 30,60 L60,90" class="text-pink-600 ah-heart-part"/>
+            <path id="ah-part-1" d="M90,30 A15,15 0 0,1 90,60 L60,90" class="text-pink-600 ah-heart-part"/>
+            <path id="ah-part-2" d="M60,40 C50,20 15,25 20,55 C25,85 60,105 60,105" class="text-pink-500 ah-heart-part" stroke-width="3.5"/>
+            <path id="ah-part-3" d="M60,40 C70,20 105,25 100,55 C95,85 60,105 60,105" class="text-pink-500 ah-heart-part" stroke-width="3.5"/>
+            <g id="ah-part-4" class="text-amber-400 ah-heart-part">
+              <line x1="10" y1="105" x2="110" y2="15" stroke-width="2"/>
+              <polygon points="110,15 100,20 105,30" fill="currentColor"/>
+              <path d="M12,107 L5,112 L10,100 Z" fill="currentColor"/>
+            </g>
+            <path id="ah-part-5" d="M60,52 C56,44 42,46 44,58 C46,70 60,78 60,78 C60,78 74,70 76,58 C78,46 64,44 60,52 Z" class="text-red-400 ah-heart-part" fill="currentColor"/>
           </svg>
           <div id="ahorcado-hint-display" class="text-[10px] italic text-purple-200/60 hidden"></div>
           <!-- Palabra oculta -->
@@ -4567,16 +4744,26 @@ function copyKey() {
 // ════════════════════════════════════════════
 function cancionSendPista() {
   const title = (document.getElementById('cancion-title').value || '').trim();
+  const media = (document.getElementById('cancion-media').value || '').trim();
   const lyrics = (document.getElementById('cancion-lyrics').value || '').trim();
   if (!lyrics) return showToast('Escribe la letra primero');
   const holes = (lyrics.match(/___/g) || []).length;
   if (holes === 0) return showToast('Añade al menos un hueco (___) en la letra');
   updateState(room => {
-    room.cancion = { title, lyrics, proposer: state.user.name, answers: null, revealed: false, ts: Date.now() };
+    room.cancion = { title, media, lyrics, proposer: state.user.name, answers: null, revealed: false, ts: Date.now() };
   });
+  document.getElementById('cancion-title').value = '';
+  document.getElementById('cancion-media').value = '';
+  document.getElementById('cancion-lyrics').value = '';
   document.getElementById('cancion-sent-msg').classList.remove('hidden');
   setTimeout(() => document.getElementById('cancion-sent-msg').classList.add('hidden'), 3000);
   showToast('Pista enviada 🎤');
+}
+
+function cancionGetYouTubeId(url) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 function cancionRenderPuzzle(cancionData) {
@@ -4585,13 +4772,39 @@ function cancionRenderPuzzle(cancionData) {
   const checkBtn = document.getElementById('cancion-check-btn');
   const revealBtn = document.getElementById('cancion-reveal-btn');
   const resultMsg = document.getElementById('cancion-result-msg');
+  const mediaContainer = document.getElementById('cancion-media-container');
+  
   if (!cancionData || !cancionData.lyrics) {
     display.textContent = 'Esperando que tu pareja envíe una pista…';
     inputsArea.innerHTML = '';
     checkBtn.classList.add('hidden');
     revealBtn.classList.add('hidden');
+    if (mediaContainer) { mediaContainer.innerHTML = ''; mediaContainer.classList.add('hidden'); }
     return;
   }
+  
+  if (mediaContainer) {
+    if (cancionData.media) {
+      const ytId = cancionGetYouTubeId(cancionData.media);
+      if (ytId) {
+        mediaContainer.innerHTML = `
+          <div class="text-[9px] uppercase tracking-widest font-semibold mb-1" style="color: var(--muted)">Melodía de pista (YouTube) 📺</div>
+          <iframe src="https://www.youtube.com/embed/${ytId}" class="w-full aspect-video rounded-xl border border-white/10" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        `;
+      } else {
+        mediaContainer.innerHTML = `
+          <a href="${cancionData.media}" target="_blank" class="btn-ghost text-xs py-2 px-4 flex items-center justify-center gap-1.5 w-full">
+            <span>🎵 Escuchar enlace de pista 🔗</span>
+          </a>
+        `;
+      }
+      mediaContainer.classList.remove('hidden');
+    } else {
+      mediaContainer.innerHTML = '';
+      mediaContainer.classList.add('hidden');
+    }
+  }
+
   if (cancionData.proposer === state.user.name) {
     display.innerHTML = `<span class="text-amber-300">Tú propusiste esta pista. Tu pareja está adivinando…</span><br><span class="text-xs opacity-60">${cancionData.title ? '🎵 ' + cancionData.title : ''}</span>`;
     inputsArea.innerHTML = '';
@@ -4599,6 +4812,7 @@ function cancionRenderPuzzle(cancionData) {
     revealBtn.classList.remove('hidden');
     return;
   }
+  
   const parts = cancionData.lyrics.split('___');
   let html = '';
   parts.forEach((p, i) => {
@@ -4610,6 +4824,7 @@ function cancionRenderPuzzle(cancionData) {
   checkBtn.classList.remove('hidden');
   revealBtn.classList.remove('hidden');
   resultMsg.classList.add('hidden');
+  
   if (cancionData.revealed) cancionRevealFull(cancionData);
 }
 
@@ -4633,6 +4848,9 @@ function cancionCheckAnswers() {
   if (correct === inputs.length) {
     resultMsg.textContent = '🎉 ¡Perfecto! Acertaste todos los huecos!';
     resultMsg.className = 'text-xs text-center text-green-400';
+    triggerEmojiExplosion('🎉');
+    triggerEmojiExplosion('🎵');
+    if (window.audio && audio.playMatch) audio.playMatch();
   } else {
     resultMsg.textContent = `✅ ${correct}/${inputs.length} correctos. ¡Sigue intentándolo!`;
     resultMsg.className = 'text-xs text-center text-amber-300';
@@ -4684,33 +4902,79 @@ const CW = {
   ]
 };
 
+function getActiveCrossword() {
+  const custom = state.room.customCrossword;
+  if (custom && custom.length === 4 && custom.every(item => item && item.word)) {
+    const grid = Array(4).fill(null).map(() => Array(12).fill('#'));
+    const clues = [];
+    
+    custom.forEach((item, r) => {
+      const word = item.word.toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ]/g, '');
+      const L = word.length;
+      const startCol = Math.floor((12 - L) / 2);
+      
+      for (let c = 0; c < L; c++) {
+        grid[r][startCol + c] = word[c];
+      }
+      
+      clues.push({
+        n: r + 1,
+        dir: 'H',
+        row: r,
+        col: startCol,
+        text: item.clue || 'Sin pista'
+      });
+    });
+    
+    return { grid, clues, isCustom: true };
+  }
+  
+  return { grid: CW.grid, clues: CW.clues, isCustom: false };
+}
+
 function crucigramaRender() {
   const board = document.getElementById('crucigrama-board');
   const cluesEl = document.getElementById('crucigrama-clues');
   if (!board) return;
-  const rows = CW.grid.length, cols = CW.grid[0].length;
-  let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols},34px)">`;
+  
+  const { grid, clues, isCustom } = getActiveCrossword();
+  const rows = grid.length;
+  const cols = grid[0].length;
+  
+  let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols}, 34px)">`;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const ch = CW.grid[r][c];
+      const ch = grid[r][c];
       if (ch === '#') {
         html += `<div class="cw-cell cw-black"></div>`;
       } else {
-        const num = CW.clues.find(cl => cl.row===r && cl.col===c);
-        html += `<div class="relative"><input type="text" maxlength="1" class="cw-cell cw-num" data-r="${r}" data-c="${c}" autocomplete="off" spellcheck="false">${num?`<span class="cw-num-label">${num.n}</span>`:''}</div>`;
+        const num = clues.find(cl => cl.row === r && cl.col === c);
+        html += `<div class="relative"><input type="text" maxlength="1" class="cw-cell cw-num" data-r="${r}" data-c="${c}" autocomplete="off" spellcheck="false">${num ? `<span class="cw-num-label">${num.n}</span>` : ''}</div>`;
       }
     }
   }
   html += '</div>';
   board.innerHTML = html;
-  const horizontal = CW.clues.filter(cl=>cl.dir==='H');
-  const vertical   = CW.clues.filter(cl=>cl.dir==='V');
+  
+  const horizontal = clues.filter(cl => cl.dir === 'H');
+  const vertical   = clues.filter(cl => cl.dir === 'V');
+  
   let clueHtml = `<div><div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color:var(--muted)">Horizontales</div>`;
-  horizontal.forEach(cl => { clueHtml += `<div class="mb-0.5"><span class="text-amber-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; });
-  clueHtml += `</div><div><div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color:var(--muted)">Verticales</div>`;
-  vertical.forEach(cl => { clueHtml += `<div class="mb-0.5"><span class="text-pink-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; });
+  horizontal.forEach(cl => { 
+    clueHtml += `<div class="mb-0.5"><span class="text-amber-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; 
+  });
   clueHtml += `</div>`;
+  
+  if (vertical.length > 0) {
+    clueHtml += `<div><div class="text-[10px] uppercase tracking-widest font-semibold mb-1" style="color:var(--muted)">Verticales</div>`;
+    vertical.forEach(cl => { 
+      clueHtml += `<div class="mb-0.5"><span class="text-pink-300 font-bold">${cl.n}.</span> ${cl.text}</div>`; 
+    });
+    clueHtml += `</div>`;
+  }
+  
   cluesEl.innerHTML = clueHtml;
+  
   board.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
     inp.addEventListener('input', e => {
       inp.value = inp.value.toUpperCase().slice(-1);
@@ -4723,11 +4987,12 @@ function crucigramaRender() {
 }
 
 function crucigramaCheck() {
+  const { grid } = getActiveCrossword();
   const inputs = document.querySelectorAll('.cw-cell.cw-num');
   let correct = 0, total = 0;
   inputs.forEach(inp => {
     const r = +inp.dataset.r, c = +inp.dataset.c;
-    const expected = CW.grid[r][c];
+    const expected = grid[r][c];
     total++;
     inp.classList.remove('cw-correct','cw-wrong');
     if (inp.value === expected) { inp.classList.add('cw-correct'); correct++; }
@@ -4739,6 +5004,7 @@ function crucigramaCheck() {
     res.textContent = '🎉 ¡Crucigrama completado! ¡Campeones del amor!';
     res.className = 'text-center text-sm font-semibold text-green-400';
     triggerEmojiExplosion('🏆');
+    if (window.audio && audio.playMatch) audio.playMatch();
   } else {
     res.textContent = `${correct}/${total} correctas. ¡Sigue intentándolo!`;
     res.className = 'text-center text-sm font-semibold text-amber-300';
@@ -4754,6 +5020,44 @@ function crucigramaReset() {
   document.getElementById('crucigrama-result').classList.add('hidden');
 }
 
+function saveCustomCrossword() {
+  const customCW = [];
+  for (let i = 0; i < 4; i++) {
+    const wordVal = (document.getElementById(`cw-word-${i}`).value || '').trim().toUpperCase().replace(/[^A-ZÁÉÍÓÚÜÑ]/g, '');
+    const clueVal = (document.getElementById(`cw-clue-${i}`).value || '').trim();
+    
+    if (wordVal.length < 2) {
+      return showToast(`La palabra ${i+1} debe tener al menos 2 letras`);
+    }
+    if (!clueVal) {
+      return showToast(`Escribe una pista para la palabra ${i+1}`);
+    }
+    
+    customCW.push({ word: wordVal, clue: clueVal });
+  }
+  
+  updateState(room => {
+    room.customCrossword = customCW;
+    room.crucigramaAnswers = {};
+  });
+  
+  showToast('¡Crucigrama personalizado enviado a tu pareja! 🚀');
+}
+
+function clearCustomCrossword() {
+  updateState(room => {
+    room.customCrossword = null;
+    room.crucigramaAnswers = {};
+  });
+  
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`cw-word-${i}`).value = '';
+    document.getElementById(`cw-clue-${i}`).value = '';
+  }
+  
+  showToast('Restablecido al crucigrama clásico 📝');
+}
+
 function renderCrucigrama() {
   crucigramaRender();
   const saved = state.room.crucigramaAnswers || {};
@@ -4761,13 +5065,68 @@ function renderCrucigrama() {
     const key = `${inp.dataset.r}_${inp.dataset.c}`;
     if (saved[key]) inp.value = saved[key];
   });
+  
+  const custom = state.room.customCrossword || [];
+  for (let i = 0; i < 4; i++) {
+    const wordInput = document.getElementById(`cw-word-${i}`);
+    const clueInput = document.getElementById(`cw-clue-${i}`);
+    if (wordInput && !wordInput.matches(':focus')) {
+      wordInput.value = custom[i] ? custom[i].word : '';
+    }
+    if (clueInput && !clueInput.matches(':focus')) {
+      clueInput.value = custom[i] ? custom[i].clue : '';
+    }
+  }
 }
 
 // ════════════════════════════════════════════
-// PALABRAS ENCADENADAS
-// ════════════════════════════════════════════
-const ENC_CATEGORIES = ['Comidas', 'Lugares', 'Cosas románticas', 'Nombres', 'Animales', 'Películas'];
-let encCatIdx = 0;
+let encTimerInterval = null;
+let encTimeLeft = 30;
+
+function getEncActivePlayer() {
+  const chain = state.room.encChain || [];
+  if (chain.length === 0) return null;
+  const lastUser = chain[chain.length - 1].user;
+  return lastUser === 'Gabriel' ? 'Alexa' : 'Gabriel';
+}
+
+function startEncTimer() {
+  clearInterval(encTimerInterval);
+  const timerDisplay = document.getElementById('enc-timer-display');
+  if (!timerDisplay) return;
+  
+  const activePlayer = getEncActivePlayer();
+  if (activePlayer !== state.user.name) {
+    timerDisplay.classList.add('hidden');
+    return;
+  }
+  
+  timerDisplay.classList.remove('hidden');
+  encTimeLeft = 30;
+  timerDisplay.textContent = `⏱️ ${encTimeLeft}s`;
+  
+  encTimerInterval = setInterval(() => {
+    encTimeLeft--;
+    timerDisplay.textContent = `⏱️ ${encTimeLeft}s`;
+    
+    if (encTimeLeft <= 10) {
+      timerDisplay.className = 'text-xs font-semibold px-2 py-0.5 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 animate-pulse';
+    } else {
+      timerDisplay.className = 'text-xs font-semibold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-amber-400';
+    }
+    
+    if (encTimeLeft <= 0) {
+      clearInterval(encTimerInterval);
+      const indicator = document.getElementById('enc-turn-indicator');
+      if (indicator) indicator.textContent = '❌ ¡Se acabó el tiempo!';
+      const input = document.getElementById('enc-word-input');
+      const btn = document.getElementById('enc-send-btn');
+      if (input) input.disabled = true;
+      if (btn) btn.disabled = true;
+      showToast('¡Tiempo agotado! ⏳');
+    }
+  }, 1000);
+}
 
 function encRender() {
   const chain = state.room.encChain || [];
@@ -4788,9 +5147,50 @@ function encRender() {
     const isMine = item.user === state.user.name;
     return `<span class="enc-chip ${isMine ? 'mine' : 'theirs'}" title="${item.user}">${item.word}</span>`;
   }).join('');
+
+  const activePlayer = getEncActivePlayer();
+  const indicator = document.getElementById('enc-turn-indicator');
+  const input = document.getElementById('enc-word-input');
+  const btn = document.getElementById('enc-send-btn');
+  
+  if (!activePlayer) {
+    indicator.textContent = '¡Cualquiera puede iniciar la cadena! 🏁';
+    indicator.className = 'text-xs font-semibold text-green-400';
+    if (input) input.disabled = false;
+    if (btn) btn.disabled = false;
+    
+    clearInterval(encTimerInterval);
+    encTimerInterval = null;
+    const timerDisplay = document.getElementById('enc-timer-display');
+    if (timerDisplay) timerDisplay.classList.add('hidden');
+  } else if (activePlayer === state.user.name) {
+    indicator.textContent = '¡Es tu turno! 🔗';
+    indicator.className = 'text-xs font-semibold text-pink-400 animate-pulse';
+    if (input) input.disabled = false;
+    if (btn) btn.disabled = false;
+    
+    if (!encTimerInterval) {
+      startEncTimer();
+    }
+  } else {
+    indicator.textContent = `Esperando que ${activePlayer} responda... ⏳`;
+    indicator.className = 'text-xs font-semibold text-purple-200/50';
+    if (input) input.disabled = true;
+    if (btn) btn.disabled = true;
+    
+    clearInterval(encTimerInterval);
+    encTimerInterval = null;
+    const timerDisplay = document.getElementById('enc-timer-display');
+    if (timerDisplay) timerDisplay.classList.add('hidden');
+  }
 }
 
 function encSendWord() {
+  const activePlayer = getEncActivePlayer();
+  if (activePlayer && activePlayer !== state.user.name) {
+    return showToast('No es tu turno');
+  }
+
   const input = document.getElementById('enc-word-input');
   const word = (input.value || '').trim().toLowerCase().replace(/[^a-záéíóúüñ]/gi,'');
   const errEl = document.getElementById('enc-error-msg');
@@ -4813,15 +5213,25 @@ function encSendWord() {
   }
   errEl.classList.add('hidden');
   const newChain = [...chain, { word, user: state.user.name }];
+  
+  if (window.audio && audio.playPoke) audio.playPoke();
+  
+  clearInterval(encTimerInterval);
+  encTimerInterval = null;
+
   updateState(room => { room.encChain = newChain; });
   input.value = '';
 }
 
 function encReset() {
+  clearInterval(encTimerInterval);
+  encTimerInterval = null;
   updateState(room => { room.encChain = []; });
 }
 
 function encNextCategory() {
+  clearInterval(encTimerInterval);
+  encTimerInterval = null;
   const next = ((state.room.encCatIdx || 0) + 1) % ENC_CATEGORIES.length;
   updateState(room => { room.encCatIdx = next; room.encChain = []; });
   showToast(`Categoría: ${ENC_CATEGORIES[next]}`);
@@ -4847,34 +5257,174 @@ const DADO2_FACES = [
   { emoji:'🌙', label:'esta noche' },
 ];
 
-function dadosRoll() {
-  const d1 = DADO1_FACES[Math.floor(Math.random() * 6)];
-  const d2 = DADO2_FACES[Math.floor(Math.random() * 6)];
-  updateState(room => {
-    room.dados = { d1, d2, roller: state.user.name, ts: Date.now() };
+function getDadoFaces() {
+  const custom1 = state.room.customDado1 || [];
+  const custom2 = state.room.customDado2 || [];
+  
+  const d1 = Array(6).fill(null).map((_, i) => {
+    if (custom1[i] && custom1[i].text) {
+      return { emoji: custom1[i].emoji || '🎲', label: custom1[i].text };
+    }
+    return DADO1_FACES[i];
   });
+  
+  const d2 = Array(6).fill(null).map((_, i) => {
+    if (custom2[i] && custom2[i].text) {
+      return { emoji: custom2[i].emoji || '🎲', label: custom2[i].text };
+    }
+    return DADO2_FACES[i];
+  });
+  
+  return { d1, d2 };
+}
+
+function dadosRoll() {
+  const { d1, d2 } = getDadoFaces();
+  const res1 = d1[Math.floor(Math.random() * 6)];
+  const res2 = d2[Math.floor(Math.random() * 6)];
+  updateState(room => {
+    room.dados = { d1: res1, d2: res2, roller: state.user.name, ts: Date.now() };
+  });
+}
+
+function saveCustomDados() {
+  const customDado1 = [];
+  const customDado2 = [];
+  
+  for (let i = 0; i < 6; i++) {
+    const val1 = (document.getElementById(`c-d1-${i}`).value || '').trim();
+    const val2 = (document.getElementById(`c-d2-${i}`).value || '').trim();
+    
+    if (val1) {
+      const match = val1.match(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])\s*(.*)$/);
+      if (match) {
+        customDado1.push({ emoji: match[1], text: match[2].trim() });
+      } else {
+        customDado1.push({ emoji: '🎲', text: val1 });
+      }
+    } else {
+      customDado1.push(null);
+    }
+    
+    if (val2) {
+      const match = val2.match(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])\s*(.*)$/);
+      if (match) {
+        customDado2.push({ emoji: match[1], text: match[2].trim() });
+      } else {
+        customDado2.push({ emoji: '🎲', text: val2 });
+      }
+    } else {
+      customDado2.push(null);
+    }
+  }
+  
+  updateState(room => {
+    room.customDado1 = customDado1;
+    room.customDado2 = customDado2;
+  });
+  
+  showToast('¡Dados personalizados guardados! ⚙️🎲');
 }
 
 function renderDados() {
   const d = state.room.dados;
-  const el1 = document.getElementById('dado1');
-  const el2 = document.getElementById('dado2');
+  const cube1 = document.getElementById('dado1-cube');
+  const cube2 = document.getElementById('dado2-cube');
   const res = document.getElementById('dados-result');
   const roller = document.getElementById('dados-last-roller');
+  if (!cube1 || !cube2) return;
+
+  const { d1, d2 } = getDadoFaces();
+
+  const facesHTML1 = d1.map((f, idx) => `
+    <div class="face-3d face-${idx+1}">
+      <span>${f.emoji}</span>
+      <span class="face-3d-label">${f.label}</span>
+    </div>
+  `).join('');
+
+  const facesHTML2 = d2.map((f, idx) => `
+    <div class="face-3d face-${idx+1}">
+      <span>${f.emoji}</span>
+      <span class="face-3d-label">${f.label}</span>
+    </div>
+  `).join('');
+
+  cube1.innerHTML = facesHTML1;
+  cube2.innerHTML = facesHTML2;
+
+  // Llenar inputs de personalización
+  for (let i = 0; i < 6; i++) {
+    const input1 = document.getElementById(`c-d1-${i}`);
+    const input2 = document.getElementById(`c-d2-${i}`);
+    if (input1 && !input1.matches(':focus')) {
+      const custom1 = state.room.customDado1 || [];
+      input1.value = custom1[i] ? `${custom1[i].emoji} ${custom1[i].text}`.trim() : '';
+    }
+    if (input2 && !input2.matches(':focus')) {
+      const custom2 = state.room.customDado2 || [];
+      input2.value = custom2[i] ? `${custom2[i].emoji} ${custom2[i].text}`.trim() : '';
+    }
+  }
+
+  if (roller) roller.textContent = d ? (d.roller || '—') : '—';
   if (!d) return;
-  el1.classList.add('dado-rolling');
-  el2.classList.add('dado-rolling');
-  setTimeout(() => {
-    el1.classList.remove('dado-rolling');
-    el2.classList.remove('dado-rolling');
-    el1.textContent = d.d1.emoji;
-    el2.textContent = d.d2.emoji;
-    document.getElementById('dado1-label').textContent = d.d1.label;
-    document.getElementById('dado2-label').textContent = d.d2.label;
-    res.textContent = `${d.d1.label} — ${d.d2.label} 💕`;
-    if (roller) roller.textContent = d.roller || '—';
-  }, 520);
-  if (roller) roller.textContent = d.roller || '—';
+
+  const timeDiff = Date.now() - (d.ts || 0);
+  if (timeDiff < 5000) {
+    const idx1 = d1.findIndex(f => f.label === d.d1.label);
+    const idx2 = d2.findIndex(f => f.label === d.d2.label);
+
+    if (idx1 !== -1 && idx2 !== -1) {
+      const rotTable = [
+        { x: 0, y: 0 },       // Cara 1
+        { x: 0, y: 180 },     // Cara 2
+        { x: 0, y: -90 },     // Cara 3
+        { x: 0, y: 90 },      // Cara 4
+        { x: -90, y: 0 },     // Cara 5
+        { x: 90, y: 0 }       // Cara 6
+      ];
+
+      const r1 = rotTable[idx1];
+      const r2 = rotTable[idx2];
+
+      cube1.style.transition = 'none';
+      cube2.style.transition = 'none';
+      cube1.style.transform = `rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg) rotateZ(${Math.random()*360}deg)`;
+      cube2.style.transform = `rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg) rotateZ(${Math.random()*360}deg)`;
+
+      setTimeout(() => {
+        cube1.style.transition = 'transform 1.2s cubic-bezier(0.2, 0.8, 0.3, 1)';
+        cube2.style.transition = 'transform 1.2s cubic-bezier(0.2, 0.8, 0.3, 1)';
+        cube1.style.transform = `rotateX(${r1.x + 1080}deg) rotateY(${r1.y + 1080}deg) rotateZ(360deg)`;
+        cube2.style.transform = `rotateX(${r2.x + 1080}deg) rotateY(${r2.y + 1080}deg) rotateZ(360deg)`;
+      }, 50);
+
+      setTimeout(() => {
+        document.getElementById('dado1-label').textContent = d.d1.label;
+        document.getElementById('dado2-label').textContent = d.d2.label;
+        res.textContent = `${d.d1.emoji} ${d.d1.label} — ${d.d2.emoji} ${d.d2.label} 💕`;
+      }, 1200);
+    }
+  } else {
+    const idx1 = d1.findIndex(f => f.label === d.d1.label);
+    const idx2 = d2.findIndex(f => f.label === d.d2.label);
+    if (idx1 !== -1 && idx2 !== -1) {
+      const rotTable = [
+        { x: 0, y: 0 }, { x: 0, y: 180 }, { x: 0, y: -90 },
+        { x: 0, y: 90 }, { x: -90, y: 0 }, { x: 90, y: 0 }
+      ];
+      const r1 = rotTable[idx1];
+      const r2 = rotTable[idx2];
+      cube1.style.transition = 'none';
+      cube2.style.transition = 'none';
+      cube1.style.transform = `rotateX(${r1.x}deg) rotateY(${r1.y}deg) rotateZ(0deg)`;
+      cube2.style.transform = `rotateX(${r2.x}deg) rotateY(${r2.y}deg) rotateZ(0deg)`;
+      document.getElementById('dado1-label').textContent = d.d1.label;
+      document.getElementById('dado2-label').textContent = d.d2.label;
+      res.textContent = `${d.d1.emoji} ${d.d1.label} — ${d.d2.emoji} ${d.d2.label} 💕`;
+    }
+  }
 }
 
 // ════════════════════════════════════════════
@@ -4980,15 +5530,18 @@ function renderAhorcado() {
   const propLabel = document.getElementById('ahorcado-proposer-label');
   const guessLabel = document.getElementById('ahorcado-guesser-label');
   const names = ['Gabriel','Alexa'];
+  const heartParts = ['ah-part-0', 'ah-part-1', 'ah-part-2', 'ah-part-3', 'ah-part-4', 'ah-part-5'];
   if (!ah) {
     proposePanel.classList.remove('hidden');
     gamePanel.classList.remove('hidden');
     document.getElementById('ahorcado-word-display').innerHTML = '';
     document.getElementById('ahorcado-letters').innerHTML = '';
-    document.getElementById('ahorcado-status-msg').classList.add('hidden');
+    const statusEl = document.getElementById('ahorcado-status-msg');
+    statusEl.classList.add('hidden');
+    statusEl.removeAttribute('data-triggered');
     document.getElementById('ahorcado-new-btn').classList.add('hidden');
     document.getElementById('ahorcado-hint-display').classList.add('hidden');
-    AH_PARTS.forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+    heartParts.forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('broken'); });
     propLabel.textContent = '—'; guessLabel.textContent = '—';
     return;
   }
@@ -4999,10 +5552,16 @@ function renderAhorcado() {
   const guesses = ah.guesses || [];
   const word = ah.word;
   const wrong = guesses.filter(g => !word.includes(g)).length;
-  // Draw figure
-  AH_PARTS.forEach((id, i) => {
+  // Romper partes del corazón según fallos
+  heartParts.forEach((id, i) => {
     const el = document.getElementById(id);
-    if (el) el.style.display = i < wrong ? '' : 'none';
+    if (el) {
+      if (i >= 6 - wrong) {
+        el.classList.add('broken');
+      } else {
+        el.classList.remove('broken');
+      }
+    }
   });
   // Word
   const wordDisplay = document.getElementById('ahorcado-word-display');
@@ -5032,6 +5591,14 @@ function renderAhorcado() {
     if (ah.won) {
       statusEl.textContent = `🎉 ¡${guessLabel.textContent} lo adivinó! La palabra era "${word}"`;
       statusEl.style.color = '#4ade80';
+      
+      const alreadyTriggered = statusEl.getAttribute('data-triggered') === 'true';
+      if (!alreadyTriggered) {
+        triggerEmojiExplosion('💖');
+        triggerEmojiExplosion('🎉');
+        if (state.user.name === guessLabel.textContent) audio.playMatch();
+        statusEl.setAttribute('data-triggered', 'true');
+      }
     } else {
       statusEl.textContent = `💔 Game over. La palabra era "${word}"`;
       statusEl.style.color = 'var(--accent)';
@@ -5039,9 +5606,7 @@ function renderAhorcado() {
   } else {
     statusEl.classList.add('hidden');
     newBtn.classList.add('hidden');
-    if (!isGuesser) {
-      const info = document.createElement('div');
-    }
+    statusEl.removeAttribute('data-triggered');
   }
 }
 
@@ -5072,11 +5637,23 @@ function c4Drop(col) {
     if (board[r * C4_COLS + col] === 0) { row = r; break; }
   }
   if (row === -1) return showToast('Columna llena');
-  board[row * C4_COLS + col] = myPlayer;
+  const droppedIdx = row * C4_COLS + col;
+  board[droppedIdx] = myPlayer;
   const { winner, winCells } = c4CheckWinner(board);
   const finished = winner > 0 || board.every(c => c !== 0);
+  
+  if (window.audio && audio.playFlip) audio.playFlip();
+
   updateState(room => {
-    room.conecta4 = { board, turn: myPlayer === 1 ? 2 : 1, finished, winner, winCells: winCells || [] };
+    room.conecta4 = { 
+      board, 
+      turn: myPlayer === 1 ? 2 : 1, 
+      finished, 
+      winner, 
+      winCells: winCells || [],
+      lastDroppedIndex: droppedIdx,
+      lastDroppedTs: Date.now()
+    };
   });
 }
 
@@ -5122,28 +5699,51 @@ function renderConecta4() {
   const board = g.board;
   const winCells = g.winCells || [];
   const myPlayer = state.user.name === 'Gabriel' ? 1 : 2;
+  
+  const lastDroppedIdx = g.lastDroppedIndex !== undefined ? g.lastDroppedIndex : -1;
+  const lastDroppedTs = g.lastDroppedTs || 0;
+  const isRecentDrop = (Date.now() - lastDroppedTs) < 4000;
+
   let cells = '';
   for (let r = 0; r < C4_ROWS; r++) {
     for (let c = 0; c < C4_COLS; c++) {
       const idx = r * C4_COLS + c;
       const val = board[idx];
       const isWin = winCells.includes(idx);
-      const cls = val === 1 ? 'p1' : val === 2 ? 'p2' : '';
+      
+      let tokenHtml = '';
+      if (val !== 0) {
+        const cls = val === 1 ? 'p1' : 'p2';
+        const animateCls = (idx === lastDroppedIdx && isRecentDrop) ? 'animate-drop' : '';
+        tokenHtml = `<div class="c4-token ${cls} ${animateCls}"></div>`;
+      }
+      
       const winCls = isWin ? 'winning' : '';
       const canPlay = !g.finished && val === 0 && g.turn === myPlayer;
-      cells += `<div class="c4-cell ${cls} ${winCls}" ${canPlay ? `onclick="c4Drop(${c})"` : ''}></div>`;
+      cells += `<div class="c4-cell ${winCls}" ${canPlay ? `onclick="c4Drop(${c})"` : ''} style="${isWin ? `color: ${g.winner === 1 ? 'var(--accent)' : 'var(--accent-2)'}` : ''}">
+        ${tokenHtml}
+      </div>`;
     }
   }
   boardEl.innerHTML = cells;
+  
   if (g.finished) {
     if (g.winner) {
       const wname = g.winner === 1 ? 'Gabriel' : 'Alexa';
       turnEl.textContent = `🎉 ¡${wname} gana! Pulsa nueva partida.`;
-      if (g.winner === myPlayer) triggerEmojiExplosion('🏆');
+      
+      const alreadyTriggered = boardEl.getAttribute('data-triggered') === 'true';
+      if (!alreadyTriggered && isRecentDrop) {
+        triggerEmojiExplosion('💖');
+        triggerEmojiExplosion('🏆');
+        if (g.winner === myPlayer && window.audio && audio.playMatch) audio.playMatch();
+        boardEl.setAttribute('data-triggered', 'true');
+      }
     } else {
       turnEl.textContent = '🤝 ¡Empate! Bien jugado.';
     }
   } else {
+    boardEl.removeAttribute('data-triggered');
     const turnName = g.turn === 1 ? 'Gabriel' : 'Alexa';
     turnEl.textContent = g.turn === myPlayer ? '¡Tu turno! Elige columna 💗' : `Turno de ${turnName}…`;
   }
@@ -5283,6 +5883,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('crucigrama-check-btn')?.addEventListener('click', crucigramaCheck);
   document.getElementById('crucigrama-reset-btn')?.addEventListener('click', crucigramaReset);
+  document.getElementById('save-custom-cw')?.addEventListener('click', saveCustomCrossword);
+  document.getElementById('clear-custom-cw')?.addEventListener('click', clearCustomCrossword);
 
   document.getElementById('enc-send-btn')?.addEventListener('click', encSendWord);
   document.getElementById('enc-word-input')?.addEventListener('keypress', e => { if(e.key==='Enter') encSendWord(); });
@@ -5290,6 +5892,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('enc-category-btn')?.addEventListener('click', encNextCategory);
 
   document.getElementById('dados-roll-btn')?.addEventListener('click', dadosRoll);
+  document.getElementById('save-custom-dados')?.addEventListener('click', saveCustomDados);
 
   document.getElementById('sobre-send-btn')?.addEventListener('click', sobreSend);
 
