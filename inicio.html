@@ -5291,9 +5291,22 @@ function getDadoFaces() {
 }
 
 function dadosRoll() {
+  const btn = document.getElementById('dados-roll-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '🎲 Lanzando...';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = '🎲 Lanzar dados';
+    }, 2000);
+  }
+
   const { d1, d2 } = getDadoFaces();
   const res1 = d1[Math.floor(Math.random() * 6)];
   const res2 = d2[Math.floor(Math.random() * 6)];
+  
+  if (window.audio && audio.playFlip) audio.playFlip();
+
   updateState(room => {
     room.dados = { d1: res1, d2: res2, roller: state.user.name, ts: Date.now() };
   });
@@ -5384,6 +5397,11 @@ function renderDados() {
 
   const timeDiff = Date.now() - (d.ts || 0);
   if (timeDiff < 5000) {
+    if (cube1.getAttribute('data-last-ts') === String(d.ts)) {
+      return;
+    }
+    cube1.setAttribute('data-last-ts', String(d.ts));
+
     const idx1 = d1.findIndex(f => f.label === d.d1.label);
     const idx2 = d2.findIndex(f => f.label === d.d2.label);
 
@@ -5419,6 +5437,7 @@ function renderDados() {
       }, 1200);
     }
   } else {
+    cube1.setAttribute('data-last-ts', String(d.ts));
     const idx1 = d1.findIndex(f => f.label === d.d1.label);
     const idx2 = d2.findIndex(f => f.label === d.d2.label);
     if (idx1 !== -1 && idx2 !== -1) {
