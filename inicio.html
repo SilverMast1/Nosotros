@@ -1261,7 +1261,7 @@
           <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Componer pista</div>
           <input id="cancion-title" type="text" class="input text-xs" placeholder="Nombre de la canción..." maxlength="60">
           <input id="cancion-media" type="text" class="input text-xs" placeholder="Enlace opcional (YouTube o Spotify)..." maxlength="150">
-          <textarea id="cancion-lyrics" class="input resize-none text-xs" rows="5" placeholder="Escribe la letra. Usa ___ (tres guiones) para marcar los huecos que debe adivinar tu pareja.&#10;Ej: Tú eres el ___ de mi vida"></textarea>
+          <textarea id="cancion-lyrics" class="input resize-none text-xs" rows="5" placeholder="Escribe la letra. Encierra entre corchetes [palabra] lo que debe adivinar tu pareja.&#10;Ej: Tú eres el [amor] de mi vida"></textarea>
           <button id="cancion-send-btn" class="btn-primary text-xs py-2">Enviar pista 🎤</button>
           <div id="cancion-sent-msg" class="text-[10px] text-green-400 hidden text-center">¡Pista enviada! Tu pareja tiene que adivinarla.</div>
         </div>
@@ -1708,6 +1708,9 @@ class LoveAudioEngine {
   init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(e => console.warn("Audio resume error", e));
     }
   }
   playTone(freq, duration, type = 'sine') {
@@ -3956,6 +3959,25 @@ function normalizeRoomState(room) {
     if (room.battleship.winner === undefined) room.battleship.winner = null;
   }
   
+  // Normalizar sobres
+  if (!room.sobres) {
+    room.sobres = [];
+  } else if (!Array.isArray(room.sobres)) {
+    room.sobres = Object.values(room.sobres);
+  }
+
+  // Normalizar palabras encadenadas
+  if (!room.encChain) {
+    room.encChain = [];
+  } else if (!Array.isArray(room.encChain)) {
+    room.encChain = Object.values(room.encChain);
+  }
+
+  // Normalizar dados y crucigrama personalizados
+  if (room.customDado1 && !Array.isArray(room.customDado1)) room.customDado1 = Object.values(room.customDado1);
+  if (room.customDado2 && !Array.isArray(room.customDado2)) room.customDado2 = Object.values(room.customDado2);
+  if (room.customCrossword && !Array.isArray(room.customCrossword)) room.customCrossword = Object.values(room.customCrossword);
+
   return room;
 }
 
@@ -4713,12 +4735,32 @@ function copyKey() {
 function cancionSendPista() {
   const title = (document.getElementById('cancion-title').value || '').trim();
   const media = (document.getElementById('cancion-media').value || '').trim();
-  const lyrics = (document.getElementById('cancion-lyrics').value || '').trim();
-  if (!lyrics) return showToast('Escribe la letra primero');
-  const holes = (lyrics.match(/___/g) || []).length;
-  if (holes === 0) return showToast('Añade al menos un hueco (___) en la letra');
+  let lyricsRaw = (document.getElementById('cancion-lyrics').value || '').trim();
+  if (!lyricsRaw) return showToast('Escribe la letra primero');
+
+  const answers = [];
+  let processedLyrics = lyricsRaw.replace(/\[([^\]]+)\]|\(([^\)]+)\)/g, (match, p1, p2) => {
+    const word = (p1 || p2).trim();
+    answers.push(word);
+    return '___';
+  });
+
+  const holes = (processedLyrics.match(/___/g) || []).length;
+  if (holes === 0) {
+    return showToast('Encierra las palabras a adivinar entre corchetes, ej: Tú eres el [amor] de mi vida');
+  }
+
   updateState(room => {
-    room.cancion = { title, media, lyrics, proposer: state.user.name, answers: null, revealed: false, ts: Date.now() };
+    room.cancion = { 
+      title, 
+      media, 
+      lyrics: processedLyrics, 
+      originalLyrics: lyricsRaw, 
+      answers, 
+      proposer: state.user.name, 
+      revealed: false, 
+      ts: Date.now() 
+    };
   });
   document.getElementById('cancion-title').value = '';
   document.getElementById('cancion-media').value = '';
@@ -4800,30 +4842,38 @@ function cancionCheckAnswers() {
   const cancionData = state.room.cancion;
   if (!cancionData) return;
   const inputs = document.querySelectorAll('.cancion-answer-input');
+  const answers = cancionData.answers || [];
   const parts = cancionData.lyrics.split('___');
   let correct = 0;
-  const cleanAccents = (str) => {
-    return str
+  
+  const clean = (str) => {
+    return (str || '')
+      .toLowerCase()
       .replace(/[áàäâ]/gi, 'a')
       .replace(/[éèëê]/gi, 'e')
       .replace(/[íìïî]/gi, 'i')
       .replace(/[óòöô]/gi, 'o')
-      .replace(/[úùüû]/gi, 'u');
+      .replace(/[úùüû]/gi, 'u')
+      .replace(/[^a-z0-9]/gi, '');
   };
+
   inputs.forEach((inp, i) => {
-    const actual = parts[i + 1] ? parts[i + 1].trim().split(/[\s,\.!?]/)[0].toLowerCase().replace(/[^a-záéíóúüñ]/gi,'') : '';
-    const guess = inp.value.trim().toLowerCase().replace(/[^a-záéíóúüñ]/gi,'');
-    const cleanActual = cleanAccents(actual);
-    const cleanGuess = cleanAccents(guess);
-    if (cleanGuess && cleanActual && (cleanGuess === cleanActual || cleanActual.includes(cleanGuess) || cleanGuess.includes(cleanActual))) {
+    const guess = clean(inp.value);
+    let expected = answers[i] ? clean(answers[i]) : '';
+    if (!expected && parts[i + 1]) {
+      expected = clean(parts[i + 1].trim().split(/[\s,\.!?]/)[0]);
+    }
+    
+    if (guess && expected && (guess === expected || expected.includes(guess) || guess.includes(expected))) {
       inp.style.borderColor = '#4ade80'; correct++;
     } else if (guess) {
       inp.style.borderColor = 'var(--accent)';
     }
   });
+
   const resultMsg = document.getElementById('cancion-result-msg');
   resultMsg.classList.remove('hidden');
-  if (correct === inputs.length) {
+  if (correct === inputs.length && inputs.length > 0) {
     resultMsg.textContent = '🎉 ¡Perfecto! Acertaste todos los huecos!';
     resultMsg.className = 'text-xs text-center text-green-400';
     triggerEmojiExplosion('🎉');
@@ -4843,7 +4893,11 @@ function cancionReveal() {
 
 function cancionRevealFull(cancionData) {
   const display = document.getElementById('cancion-puzzle-display');
-  display.innerHTML = `<span class="text-xs text-amber-300 font-semibold">🎵 ${cancionData.title || 'Sin título'}</span><br><br><span class="text-purple-200">${cancionData.lyrics.replace(/___/g,'<span class="text-green-400 font-bold">___</span>').replace(/\n/g,'<br>')}</span>`;
+  const fullLyrics = cancionData.originalLyrics ? 
+    cancionData.originalLyrics.replace(/\[([^\]]+)\]|\(([^\)]+)\)/g, '<span class="text-green-400 font-bold">$1$2</span>') :
+    cancionData.lyrics.replace(/___/g, '<span class="text-green-400 font-bold">___</span>');
+
+  display.innerHTML = `<span class="text-xs text-amber-300 font-semibold">🎵 ${cancionData.title || 'Sin título'}</span><br><br><span class="text-purple-200">${fullLyrics.replace(/\n/g,'<br>')}</span>`;
 }
 
 function renderCancion() {
@@ -5458,11 +5512,17 @@ function renderDados() {
 // ════════════════════════════════════════════
 function sobreSend() {
   const text = (document.getElementById('sobre-text').value || '').trim();
-  const openDate = document.getElementById('sobre-open-date').value;
+  const openDateStr = document.getElementById('sobre-open-date').value;
   if (!text) return showToast('Escribe tu predicción primero');
-  if (!openDate) return showToast('Selecciona la fecha de apertura');
-  if (new Date(openDate) <= new Date()) return showToast('La fecha debe ser futura');
-  const sobre = { id: Date.now(), text, openDate, author: state.user.name };
+  if (!openDateStr) return showToast('Selecciona la fecha de apertura');
+
+  const openDate = parseLocalDate(openDateStr);
+  openDate.setHours(0,0,0,0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  if (openDate <= today) return showToast('La fecha debe ser en el futuro');
+  const sobre = { id: Date.now(), text, openDate: openDateStr, author: state.user.name };
   const list = [...(state.room.sobres || []), sobre];
   updateState(room => { room.sobres = list; });
   document.getElementById('sobre-text').value = '';
