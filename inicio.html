@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Nosotros · Gabriel & Alexa</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -32,10 +32,27 @@
     background: var(--bg);
     color: var(--fg);
     font-family: 'Manrope', sans-serif;
-    overflow: hidden;
-    height: 100vh;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+  }
+  #app-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  main {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: clamp(60px, 8vh, 100px);
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
@@ -44,31 +61,9 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  @media (max-width: 768px) {
-    body {
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      height: auto !important;
-      min-height: 100vh;
-    }
-    #app-screen {
-      height: auto !important;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+  @media (max-width: 1024px) {
     main {
-      overflow: visible !important;
-      flex: none !important;
-      padding-bottom: 80px !important;
-    }
-    .section {
-      height: auto !important;
-      overflow: visible !important;
-    }
-    .inner-scroll {
-      overflow-y: visible !important;
-      max-height: none !important;
+      padding-bottom: 90px !important;
     }
   }
   .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
@@ -137,7 +132,7 @@
     color: var(--fg);
     padding: 12px 16px;
     border-radius: 14px;
-    font-size: 15px;
+    font-size: 16px;
     width: 100%;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -231,15 +226,9 @@
   .inner-scroll::-webkit-scrollbar { width: 6px; }
   .inner-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-  /* Diseños de sección a pantalla completa (no scroll) */
-  .section { display: none; height: 100%; width: 100%; overflow: hidden; }
+  /* Diseños de sección */
+  .section { display: none; width: 100%; min-height: 100%; height: auto; overflow: visible; }
   .section.active { display: flex; flex-direction: column; animation: fadeIn 0.4s ease forwards; }
-  #section-dashboard, #section-puzzle, #section-retos, #section-preguntas, #section-vales,
-  #section-cancion, #section-crucigrama, #section-encadenadas, #section-dados,
-  #section-sobre, #section-ahorcado, #section-conecta4 {
-    height: auto !important;
-    overflow: visible !important;
-  }
 
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -2783,24 +2772,26 @@ function requestBrowserNotificationPermission() {
 
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
 let databaseLoaded = false;
+let connectionStateInfo = { status: 'sync', label: 'Sincronizando...' };
+
+function updateHeaderSubtitle(status = connectionStateInfo.status, label = connectionStateInfo.label) {
+  connectionStateInfo = { status, label };
+  const subtitleEl = document.getElementById('header-subtitle');
+  if (!subtitleEl) return;
+  const u1 = state.room?.user1?.name || 'Gabriel';
+  const u2 = state.room?.user2?.name || 'Alexa';
+  const dotColor = status === 'online' ? 'bg-green-400' : status === 'offline' ? 'bg-red-400' : 'bg-yellow-400 animate-pulse';
+  subtitleEl.innerHTML = `<span id="conn-status" class="w-1.5 h-1.5 rounded-full ${dotColor}"></span> ${u1} & ${u2} · ${label}`;
+}
+
 function connectMQTT() {
-  const statusEl = document.getElementById('conn-status');
-  
   if (!db) {
-    if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
-    const subtitleEl = document.getElementById('header-subtitle');
-    if (subtitleEl) {
-      subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Modo local (sin red)';
-    }
+    updateHeaderSubtitle('offline', 'Modo local (sin red)');
     console.warn("Firebase Database not available. Operating in local mode.");
     return;
   }
 
-  if (statusEl) statusEl.className = "w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse";
-  const subtitleEl = document.getElementById('header-subtitle');
-  if (subtitleEl) {
-    subtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span> Sincronizando...';
-  }
+  updateHeaderSubtitle('sync', 'Sincronizando...');
 
   roomRef = db.ref('rooms/' + state.roomKey);
   actionsRef = db.ref('rooms/' + state.roomKey + '/actions');
@@ -2808,12 +2799,7 @@ function connectMQTT() {
   // 1. Escuchar cambios de estado en tiempo real
   roomRef.on('value', (snapshot) => {
     databaseLoaded = true;
-    const liveStatusEl = document.getElementById('conn-status');
-    if (liveStatusEl) liveStatusEl.className = "w-1.5 h-1.5 rounded-full bg-green-400";
-    const liveSubtitleEl = document.getElementById('header-subtitle');
-    if (liveSubtitleEl) {
-      liveSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-green-400"></span> En tiempo real';
-    }
+    updateHeaderSubtitle('online', 'En tiempo real');
 
     const remoteState = snapshot.val();
     if (remoteState) {
@@ -2916,12 +2902,7 @@ function connectMQTT() {
       }
     }
   }, (error) => {
-    const errStatusEl = document.getElementById('conn-status');
-    if (errStatusEl) errStatusEl.className = "w-1.5 h-1.5 rounded-full bg-red-400";
-    const errSubtitleEl = document.getElementById('header-subtitle');
-    if (errSubtitleEl) {
-      errSubtitleEl.innerHTML = '<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Error de red';
-    }
+    updateHeaderSubtitle('offline', 'Error de red');
     console.error("Firebase read error", error);
   });
 
@@ -3067,10 +3048,7 @@ function logout() {
 function renderAll() {
   if (!state.room) return;
   document.getElementById('header-key').textContent = state.roomKey;
-  
-  const u1 = state.room.user1?.name || 'Gabriel';
-  const u2 = state.room.user2?.name || 'Alexa';
-  document.getElementById('header-subtitle').innerHTML = `<span id="conn-status" class="w-1.5 h-1.5 rounded-full bg-green-400"></span> ${u1} & ${u2}`;
+  updateHeaderSubtitle();
   
   renderDays(); 
   renderMood(); 
@@ -4098,16 +4076,6 @@ function handleTicTacToeCellClick(idx) {
   } else {
     publishNotification('Tres en Raya 🎮', `¡${state.user.name} ha jugado su turno! Te toca jugar. ⚔️`, 'game_die,heart');
   }
-
-  if (triggerReset) {
-    setTimeout(() => {
-      const currentTTT = state.room?.ticTacToe;
-      if (currentTTT && currentTTT.winner) {
-        resetTicTacToe();
-        showToast('¡Nueva partida iniciada! 🎮');
-      }
-    }, 4500);
-  }
 }
 
 // ===== VALES DE AMOR =====
@@ -4942,6 +4910,8 @@ function getActiveCrossword() {
   return { grid: CW.grid, clues: CW.clues, isCustom: false };
 }
 
+let currentCwSignature = '';
+
 function crucigramaRender() {
   const board = document.getElementById('crucigrama-board');
   const cluesEl = document.getElementById('crucigrama-clues');
@@ -4950,6 +4920,12 @@ function crucigramaRender() {
   const { grid, clues, isCustom } = getActiveCrossword();
   const rows = grid.length;
   const cols = grid[0].length;
+  const signature = `${isCustom ? 'custom' : 'default'}_${rows}x${cols}_${grid.flat().join('')}`;
+  
+  if (board.querySelector('.cw-grid') && currentCwSignature === signature) {
+    return;
+  }
+  currentCwSignature = signature;
   
   let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols}, 34px)">`;
   for (let r = 0; r < rows; r++) {
@@ -4983,15 +4959,31 @@ function crucigramaRender() {
     clueHtml += `</div>`;
   }
   
-  cluesEl.innerHTML = clueHtml;
+  if (cluesEl) cluesEl.innerHTML = clueHtml;
   
-  board.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
+  const inputs = Array.from(board.querySelectorAll('.cw-cell.cw-num'));
+  inputs.forEach((inp, idx) => {
     inp.addEventListener('input', e => {
       inp.value = inp.value.toUpperCase().slice(-1);
       const r = +inp.dataset.r, c = +inp.dataset.c;
-      const savedAnswers = (state.room.crucigramaAnswers || {});
-      savedAnswers[`${r}_${c}`] = inp.value;
-      updateState(room => { room.crucigramaAnswers = savedAnswers; });
+      if (!state.room.crucigramaAnswers) state.room.crucigramaAnswers = {};
+      state.room.crucigramaAnswers[`${r}_${c}`] = inp.value;
+      saveLocal();
+      if (roomRef && databaseLoaded) {
+        roomRef.child('crucigramaAnswers').child(`${r}_${c}`).set(inp.value).catch(err => console.error(err));
+      }
+      
+      if (inp.value && idx < inputs.length - 1) {
+        inputs[idx + 1].focus();
+        inputs[idx + 1].select();
+      }
+    });
+
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && idx > 0) {
+        inputs[idx - 1].focus();
+        inputs[idx - 1].select();
+      }
     });
   });
 }
@@ -5046,6 +5038,7 @@ function saveCustomCrossword() {
     customCW.push({ word: wordVal, clue: clueVal });
   }
   
+  currentCwSignature = '';
   updateState(room => {
     room.customCrossword = customCW;
     room.crucigramaAnswers = {};
@@ -5055,6 +5048,7 @@ function saveCustomCrossword() {
 }
 
 function clearCustomCrossword() {
+  currentCwSignature = '';
   updateState(room => {
     room.customCrossword = null;
     room.crucigramaAnswers = {};
@@ -5072,8 +5066,9 @@ function renderCrucigrama() {
   crucigramaRender();
   const saved = state.room.crucigramaAnswers || {};
   document.querySelectorAll('.cw-cell.cw-num').forEach(inp => {
+    if (document.activeElement === inp) return;
     const key = `${inp.dataset.r}_${inp.dataset.c}`;
-    if (saved[key]) inp.value = saved[key];
+    inp.value = saved[key] || '';
   });
   
   const custom = state.room.customCrossword || [];
@@ -5695,24 +5690,32 @@ function c4Drop(col) {
 }
 
 function c4CheckWinner(board) {
-  const check = (cells) => {
-    if (cells.some(i => i < 0 || i >= C4_ROWS * C4_COLS)) return false;
-    const v = board[cells[0]];
-    return v !== 0 && cells.every(i => board[i] === v);
-  };
+  const getVal = (r, c) => board[r * C4_COLS + c];
+  
   for (let r = 0; r < C4_ROWS; r++) {
     for (let c = 0; c < C4_COLS; c++) {
-      const i = r * C4_COLS + c;
-      const horiz = [i, i+1, i+2, i+3];
-      const vert  = [i, i+C4_COLS, i+C4_COLS*2, i+C4_COLS*3];
-      const diagR = [i, i+C4_COLS+1, i+C4_COLS*2+2, i+C4_COLS*3+3];
-      const diagL = [i, i+C4_COLS-1, i+C4_COLS*2-2, i+C4_COLS*3-3];
-      for (const cells of [horiz, vert, diagR, diagL]) {
-        if (c + (cells === horiz || cells === diagR ? 3 : cells === diagL ? -3 : 0) < 0 ||
-            c + (cells === horiz || cells === diagR ? 3 : cells === diagL ? -3 : 0) >= C4_COLS) {
-          if (cells === horiz || cells === diagR || cells === diagL) continue;
-        }
-        if (check(cells)) return { winner: board[cells[0]], winCells: cells };
+      const v = getVal(r, c);
+      if (v === 0) continue;
+      
+      // Horizontal (hacia la derecha)
+      if (c <= C4_COLS - 4) {
+        const cells = [r*C4_COLS + c, r*C4_COLS + c+1, r*C4_COLS + c+2, r*C4_COLS + c+3];
+        if (cells.every(i => board[i] === v)) return { winner: v, winCells: cells };
+      }
+      // Vertical (hacia abajo)
+      if (r <= C4_ROWS - 4) {
+        const cells = [r*C4_COLS + c, (r+1)*C4_COLS + c, (r+2)*C4_COLS + c, (r+3)*C4_COLS + c];
+        if (cells.every(i => board[i] === v)) return { winner: v, winCells: cells };
+      }
+      // Diagonal Abajo-Derecha
+      if (r <= C4_ROWS - 4 && c <= C4_COLS - 4) {
+        const cells = [r*C4_COLS + c, (r+1)*C4_COLS + c+1, (r+2)*C4_COLS + c+2, (r+3)*C4_COLS + c+3];
+        if (cells.every(i => board[i] === v)) return { winner: v, winCells: cells };
+      }
+      // Diagonal Abajo-Izquierda
+      if (r <= C4_ROWS - 4 && c >= 3) {
+        const cells = [r*C4_COLS + c, (r+1)*C4_COLS + c-1, (r+2)*C4_COLS + c-2, (r+3)*C4_COLS + c-3];
+        if (cells.every(i => board[i] === v)) return { winner: v, winCells: cells };
       }
     }
   }
