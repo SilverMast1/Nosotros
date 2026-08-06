@@ -252,6 +252,9 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(255, 74, 118, 0.15);
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+  @media (max-width: 768px) {
+    .toast { bottom: 90px; }
+  }
 
   /* 3 en Raya de Amor */
   .ttt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; aspect-ratio: 1; width: 100%; max-width: 300px; margin: 0 auto; }
@@ -567,6 +570,9 @@
   .cw-cell.cw-num { position: relative; }
   .cw-num-label { position: absolute; top: 1px; left: 2px; font-size: 7px; color: var(--accent-2); font-weight: 700; line-height: 1; pointer-events: none; }
   .cw-grid { display: inline-grid; gap: 3px; }
+  @media (max-width: 420px) {
+    .cw-cell { width: 26px; height: 26px; font-size: 11px; }
+  }
 
   /* ── Palabras encadenadas ── */
   .enc-chip {
@@ -645,8 +651,8 @@
 
   /* ── Ahorcado ── */
   .ah-letter-btn {
-    width: 32px; height: 32px; border-radius: 8px;
-    font-size: 12px; font-weight: 700;
+    width: 38px; height: 38px; border-radius: 10px;
+    font-size: 13px; font-weight: 700;
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--fg);
@@ -757,7 +763,7 @@
 
 
 <!-- PANTALLA DE LA APLICACIÓN -->
-<section id="app-screen" class="relative z-10 h-screen flex flex-col" hidden>
+<section id="app-screen" class="relative z-10 min-h-[100dvh] flex flex-col" hidden>
   <header class="px-6 py-3 border-b flex-shrink-0" style="border-color: var(--border); background: rgba(15, 5, 20, 0.4); backdrop-filter: blur(10px);">
     <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
       <div class="flex items-center gap-3">
@@ -843,7 +849,7 @@
           <div>
             <div class="text-[10px] uppercase tracking-widest mb-1.5" style="color: var(--muted)">Llevamos juntos</div>
             <div class="flex items-baseline gap-2 flex-wrap">
-              <div class="font-display text-6xl md:text-7xl font-light leading-none" style="color: var(--accent)" id="days-count">0</div>
+              <div class="font-display text-5xl md:text-7xl font-light leading-none overflow-hidden" style="color: var(--accent)" id="days-count">0</div>
               <div class="font-display text-xl" style="color: var(--muted)">días</div>
             </div>
           </div>
@@ -1217,7 +1223,7 @@
 
       <!-- BOARD CONTENEDOR -->
       <div class="flex-1 flex items-center justify-center p-2 mb-4 overflow-hidden min-h-[300px]">
-        <div id="puzzle-board" class="relative bg-white/5 border border-white/10 rounded-2xl shadow-xl w-full max-w-[340px] aspect-square overflow-hidden grid gap-[2px]">
+        <div id="puzzle-board" class="relative bg-white/5 border border-white/10 rounded-2xl shadow-xl w-full max-w-full aspect-square overflow-hidden grid gap-[2px]">
           <!-- Las piezas se colocan aquí -->
         </div>
       </div>
@@ -1375,7 +1381,7 @@
             <div class="text-[10px] uppercase tracking-widest font-semibold" style="color: var(--muted)">Categoría activa</div>
             <div id="enc-category-badge" class="text-xs px-2 py-0.5 rounded-full glass border border-white/10">—</div>
           </div>
-          <div id="enc-last-word" class="text-center font-display text-3xl my-2" style="color: var(--accent)">—</div>
+          <div id="enc-last-word" class="text-center font-display text-2xl md:text-3xl my-2 break-all overflow-hidden" style="color: var(--accent)">—</div>
           <div class="text-center text-[10px] mb-1" style="color: var(--muted)">Última letra: <span id="enc-last-letter" class="font-bold text-amber-300">—</span></div>
           <div class="flex gap-2">
             <input id="enc-word-input" type="text" class="input text-sm" placeholder="Tu palabra…" maxlength="30" autocomplete="off">
@@ -1600,7 +1606,7 @@
 
 <!-- MODAL CONFIGURACIÓN NOTIFICACIONES -->
 <div id="notif-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-6" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(10px)">
-  <div class="glass rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fadeIn flex flex-col gap-4 max-h-[90vh] overflow-y-auto inner-scroll">
+  <div class="glass rounded-3xl p-6 max-w-md w-full shadow-2xl animate-fadeIn flex flex-col gap-4 max-h-[85dvh] overflow-y-auto inner-scroll">
     <div class="flex justify-between items-center border-b border-white/5 pb-2">
       <div class="font-display text-xl flex items-center gap-2">
         <i data-lucide="bell" class="w-5 h-5 text-pink-400"></i>
@@ -2639,34 +2645,6 @@ function publishNotification(title, message, tags = 'bell') {
     }).catch(e => console.error("Error enviando notificación a Firebase:", e));
   }
 
-  // 2. Si la pareja tiene token registrado y Server Key configurada en Firebase, enviar FCM Push a celular cerrado
-  const partnerTokenKey = partnerRole + 'Token';
-  const partnerToken = state.room.notificationsConfig ? state.room.notificationsConfig[partnerTokenKey] : null;
-  const serverKey = state.room.notificationsConfig ? state.room.notificationsConfig.serverKey : null;
-
-  if (partnerToken && serverKey) {
-    fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'key=' + serverKey
-      },
-      body: JSON.stringify({
-        to: partnerToken,
-        priority: 'high',
-        notification: {
-          title: title,
-          body: message,
-          icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-          click_action: 'https://silvermast1.github.io/Nosotros/'
-        },
-        data: {
-          title: title,
-          body: message
-        }
-      })
-    }).catch(e => console.warn('[FCM Direct Push] Error:', e));
-  }
 }
 
 function publishTestNotification(targetUserRole) {
@@ -2916,10 +2894,9 @@ function connectMQTT() {
         state.currentQuizIdx = state.room.quizIdx || 0;
         saveLocal();
         
+        renderAll();
         if (newRuletaTs > oldRuletaTs) {
           triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
-        } else {
-          renderAll();
         }
 
         // Inicializar Notificaciones de Firebase si están habilitadas
@@ -4322,6 +4299,12 @@ function switchSection(name) {
   document.getElementById('section-' + name)?.classList.add('active');
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.section === name));
   
+  // Auto-scroll de la pestaña activa para que siempre sea visible en móviles
+  const activeTab = document.querySelector(`.tab[data-section="${name}"]`);
+  if (activeTab) {
+    activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+  
   if (name === 'memoria' && !state.room.memoryBoard) {
     initSharedMemory();
   }
@@ -4786,8 +4769,8 @@ function cancionSendPista() {
   if (!lyricsRaw) return showToast('Escribe la letra primero');
 
   const answers = [];
-  let processedLyrics = lyricsRaw.replace(/\[([^\]]+)\]|\(([^\)]+)\)/g, (match, p1, p2) => {
-    const word = (p1 || p2).trim();
+  let processedLyrics = lyricsRaw.replace(/\[([^\]]+)\]/g, (match, p1) => {
+    const word = p1.trim();
     answers.push(word);
     return '___';
   });
@@ -5028,7 +5011,7 @@ function crucigramaRender() {
   }
   currentCwSignature = signature;
   
-  let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols}, 34px)">`;
+  let html = `<div class="cw-grid" style="grid-template-columns:repeat(${cols}, minmax(26px, 34px)); max-width: 100%; overflow-x: auto;">`;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const ch = grid[r][c];
@@ -5489,7 +5472,7 @@ function renderDados() {
   }
 
   if (roller) roller.textContent = d ? (d.roller || '—') : '—';
-  if (!d) return;
+  if (!d || !d.d1 || !d.d2) return;
 
   const timeDiff = Date.now() - (d.ts || 0);
   if (timeDiff < 5000) {
