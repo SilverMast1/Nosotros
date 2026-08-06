@@ -1,7 +1,8 @@
 const https = require('https');
 
-// URL de la base de datos de Firebase RTDB
+// URL de la base de datos de Firebase Realtime Database (Free Tier)
 const dbUrl = 'https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com/rooms/230426.json';
+const actionsUrl = 'https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com/rooms/230426/actions.json';
 
 function getFirebaseData() {
   return new Promise((resolve, reject) => {
@@ -19,28 +20,17 @@ function getFirebaseData() {
   });
 }
 
-function sendWebpushrNotification(restKey, authToken, targetRole, title, message) {
+function pushFirebaseAction(actionData) {
   return new Promise((resolve, reject) => {
-    const postData = JSON.stringify({
-      title: title,
-      message: message,
-      target_url: 'https://silvermast1.github.io/Nosotros/',
-      attribute: [
-        {
-          key: 'user_id',
-          value: targetRole
-        }
-      ]
-    });
+    const postData = JSON.stringify(actionData);
+    const parsedUrl = new URL(actionsUrl);
 
     const options = {
-      hostname: 'api.webpushr.com',
-      path: '/v1/notification/send/attribute',
+      hostname: parsedUrl.hostname,
+      path: parsedUrl.pathname,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'webpushrKey': restKey,
-        'webpushrAuthToken': authToken,
         'Content-Length': Buffer.byteLength(postData)
       }
     };
@@ -60,14 +50,14 @@ function sendWebpushrNotification(restKey, authToken, targetRole, title, message
 async function main() {
   try {
     const room = await getFirebaseData();
-    if (!room || !room.notificationsConfig) {
-      console.log('No notification config found in database.');
+    if (!room) {
+      console.log('No database room found.');
       return;
     }
 
-    const config = room.notificationsConfig;
-    if (!config.enabled || !config.restKey || !config.authToken) {
-      console.log('Notifications are disabled or Webpushr credentials are missing.');
+    const config = room.notificationsConfig || {};
+    if (config.enabled === false) {
+      console.log('Notifications are explicitly disabled in room config.');
       return;
     }
 
@@ -78,19 +68,22 @@ async function main() {
     console.log(`Last updated: ${new Date(lastUpdated).toISOString()}`);
     console.log(`Hours since last update: ${diffHours.toFixed(2)}h`);
 
-    // Si han pasado más de 2.5 horas, enviar recordatorio
+    // Si han pasado más de 2.5 horas, registrar recordatorio en Firebase Realtime Database
     if (diffHours >= 2.5) {
-      console.log('Sending reminders via Webpushr...');
-      const promises = [];
+      console.log('Sending reminder actions to Firebase Realtime Database...');
       
-      // Gabriel es 'user1', Alexa es 'user2'
-      promises.push(sendWebpushrNotification(config.restKey, config.authToken, 'user1', '¡Gabriel, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
-      promises.push(sendWebpushrNotification(config.restKey, config.authToken, 'user2', '¡Alexa, vuestro espacio os extraña! 💕', '¿Qué tal si entras a ver qué hay de nuevo? 😍'));
-      
-      const results = await Promise.all(promises);
-      console.log('Reminders sent successfully:', results);
+      const reminderAction = {
+        action: 'reminder',
+        sender: 'Sistema Nosotros',
+        title: '¡Vuestro espacio os extraña! 💕',
+        message: '¿Qué tal si entráis a ver qué hay de nuevo? 😍',
+        timestamp: Date.now()
+      };
+
+      const result = await pushFirebaseAction(reminderAction);
+      console.log('Reminder pushed successfully to Firebase:', result);
     } else {
-      console.log('Recent activity detected. No reminders sent.');
+      console.log('Recent activity detected. No reminder needed.');
     }
   } catch (error) {
     console.error('Error in main execution:', error);

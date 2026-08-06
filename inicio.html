@@ -12,6 +12,7 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
 <style>
   :root {
@@ -1603,17 +1604,17 @@
     <div class="flex justify-between items-center border-b border-white/5 pb-2">
       <div class="font-display text-xl flex items-center gap-2">
         <i data-lucide="bell" class="w-5 h-5 text-pink-400"></i>
-        <span>Notificaciones del Espacio</span>
+        <span>Notificaciones (Puro Firebase)</span>
       </div>
       <button id="notif-close" onclick="closeNotifModal()" class="btn-ghost p-1 px-2.5 rounded-lg text-xs">✕</button>
     </div>
     
-    <!-- NOTIFICACIONES AUTOMÁTICAS AL CELULAR -->
+    <!-- NOTIFICACIONES CON FIREBASE -->
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <div>
-          <h3 class="text-sm font-semibold text-white">Notificaciones en el Celular</h3>
-          <p class="text-[10px] text-white/50">Nativas, automáticas y sin instalar aplicaciones.</p>
+          <h3 class="text-sm font-semibold text-white">Notificaciones en Tiempo Real</h3>
+          <p class="text-[10px] text-white/50">Impulsadas por Firebase Realtime Database & FCM.</p>
         </div>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" id="mobile-notif-toggle" class="sr-only peer" onchange="toggleMobileNotifications(this.checked)">
@@ -1621,7 +1622,6 @@
         </label>
       </div>
 
-      <!-- SECCIÓN EXPLICATIVA DE CONFIGURACIÓN SIMPLIFICADA -->
       <div id="mobile-notif-setup" class="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4 text-xs">
         <!-- ESTADO DE DISPOSITIVOS -->
         <div class="flex flex-col gap-2 bg-black/20 p-3 rounded-xl border border-white/5">
@@ -1629,31 +1629,26 @@
           <div id="partner-notif-status" class="text-xs font-semibold text-white/80"></div>
         </div>
 
-        <!-- GUÍA PASO A PASO PARA NATIVAS SIN APP -->
+        <!-- GUÍA PASO A PASO -->
         <div class="flex flex-col gap-2.5 border-t border-white/5 pt-2">
           <h4 class="text-xs font-bold text-pink-300 flex items-center gap-1">
-            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-pink-400"></i> ¿Cómo activarlas sin descargar apps?
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Notificaciones puras de Firebase
           </h4>
           <ol class="list-decimal list-inside text-[10px] text-white/70 space-y-1.5 leading-normal">
             <li>
-              <strong>Instala la Web en tu Celular:</strong>
-              <div class="pl-3.5 mt-0.5 text-white/50">
-                • <strong>iPhone (iOS):</strong> Pulsa <i data-lucide="share" class="inline w-3 h-3 text-pink-400"></i> Compartir en Safari y dale a <strong>"Agregar a pantalla de inicio"</strong>.<br>
-                • <strong>Android:</strong> Pulsa los <i data-lucide="more-vertical" class="inline w-3 h-3 text-pink-400"></i> tres puntos en Chrome y dale a <strong>"Instalar aplicación"</strong>.
-              </div>
+              <strong>Para Celulares (iPhone / Android):</strong><br>
+              Agrega esta web a tu pantalla de inicio (PWA) para recibir avisos instantáneos cuando tu pareja te envíe besos o mensajes.
             </li>
             <li>
-              <strong>Abre la App Instalada:</strong> Ejecuta el icono de "Nosotros" que se creó en tu pantalla de inicio.
-            </li>
-            <li>
-              <strong>Activa el Botón:</strong> Abre este modal dentro de la app instalada y pulsa el botón de abajo.
+              <strong>Permiso del Navegador:</strong><br>
+              Pulsa el botón de abajo para conceder permisos directos a Firebase en este dispositivo.
             </li>
           </ol>
         </div>
 
         <!-- BOTÓN DE ACTIVACIÓN -->
-        <button onclick="subscribeThisDevice()" class="btn-primary py-2.5 text-[11px] flex items-center justify-center gap-1.5 shadow-lg mt-1">
-          <i data-lucide="bell" class="w-4 h-4"></i> 🔔 Activar en este Celular
+        <button onclick="requestFirebasePermission()" class="btn-primary py-2.5 text-[11px] flex items-center justify-center gap-1.5 shadow-lg mt-1">
+          <i data-lucide="bell" class="w-4 h-4"></i> 🔔 Activar Notificaciones de Firebase
         </button>
 
         <!-- BOTÓN DE PRUEBA PAREJA -->
@@ -1669,11 +1664,10 @@
 
     <!-- NOTIFICACIONES LOCALES DEL NAVEGADOR -->
     <div class="flex flex-col gap-2">
-      <h3 class="text-sm font-semibold text-white">Notificaciones del Navegador (Locales)</h3>
-      <p class="text-[10px] text-white/50">Solo funcionan cuando tienes esta página web abierta.</p>
+      <h3 class="text-sm font-semibold text-white">Estado del Navegador</h3>
       <div class="flex items-center justify-between gap-3 mt-1">
         <span id="browser-notif-status" class="text-xs text-purple-200/60">—</span>
-        <button id="browser-notif-btn" onclick="requestBrowserNotificationPermission()" class="btn-ghost py-1.5 px-3 text-[10px] hidden">Activar</button>
+        <button id="browser-notif-btn" onclick="requestFirebasePermission()" class="btn-ghost py-1.5 px-3 text-[10px] hidden">Activar</button>
       </div>
     </div>
   </div>
@@ -2518,191 +2512,118 @@ function sendLocalNotification(title, body) {
   }
 }
 
-// ===== NOTIFICACIONES MÓVILES (WEBPUSHR NATIVAS) =====
-let webpushrInitialized = false;
-let webpushrScriptLoaded = false;
+// ===== NOTIFICACIONES PURAS CON FIREBASE (FREE TIER) =====
+let firebaseMessaging = null;
 
-window._webpushrScriptReady = function() {
-  console.log("Webpushr SDK ready callback triggered");
-  webpushrScriptLoaded = true;
-  initWebpushr();
-};
+function initFirebaseNotifications() {
+  if (typeof firebase === 'undefined' || !firebase.messaging) return;
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./firebase-messaging-sw.js')
+        .then((reg) => {
+          console.log('[Firebase FCM] Service Worker registrado:', reg);
+        })
+        .catch((err) => {
+          console.warn('[Firebase FCM] Registro de Service Worker omitido:', err);
+        });
+    }
 
-function loadWebpushrSDK(trackingKey) {
-  if (webpushrScriptLoaded) return;
-  if (!trackingKey) return;
-  
-  console.log("Cargando Webpushr SDK con Tracking Key:", trackingKey);
-  
-  window.webpushr = window.webpushr || function() {
-    (window.webpushr.q = window.webpushr.q || []).push(arguments);
-  };
-  
-  // Obtener ruta base actual para registrar el service worker sin errores
-  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  const swUrl = basePath + 'webpushr-sw.js';
-  
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(swUrl, { scope: basePath })
-      .then(function(reg) {
-        console.log('Service Worker de Webpushr registrado dinámicamente:', reg);
-      })
-      .catch(function(err) {
-        console.error('Error al registrar Service Worker de Webpushr:', err);
-      });
+    firebaseMessaging = firebase.messaging();
+
+    // Notificaciones en primer plano
+    firebaseMessaging.onMessage((payload) => {
+      console.log('[Firebase FCM] Mensaje en primer plano:', payload);
+      const title = payload.notification?.title || payload.data?.title || 'Nosotros 💕';
+      const body = payload.notification?.body || payload.data?.body || '';
+      sendLocalNotification(title, body);
+    });
+  } catch (e) {
+    console.warn("Firebase Messaging no disponible:", e);
   }
-
-  const js = document.createElement('script');
-  js.id = 'webpushr-jssdk';
-  js.async = true;
-  js.src = "https://cdn.webpushr.com/app.min.js";
-  js.onload = function() {
-    console.log("Webpushr SDK Script cargado");
-    webpushrScriptLoaded = true;
-    initWebpushr();
-  };
-  document.head.appendChild(js);
-  
-  webpushr('setup', {
-    'key': trackingKey,
-    'sw': 'none'
-  });
 }
 
-function initWebpushr() {
-  if (!state.user || !state.room || !state.room.notificationsConfig) return;
-  const config = state.room.notificationsConfig;
-  if (!config.enabled) return;
-
-  if (typeof webpushr === 'undefined' || !webpushrScriptLoaded) {
-    loadWebpushrSDK(config.trackingKey);
-    return;
+function requestFirebasePermission() {
+  if (typeof Notification === 'undefined') {
+    return showToast('Notificaciones no soportadas en este navegador');
   }
 
-  if (webpushrInitialized) return;
+  Notification.requestPermission().then((permission) => {
+    updateNotifIcon();
+    renderNotifModalContents();
+    if (permission === 'granted') {
+      showToast('¡Notificaciones de Firebase activadas! 🔔');
+      sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️');
 
-  webpushr('set', 'user_id', state.user.role); // e.g. 'user1' (Gabriel) o 'user2' (Alexa)
-
-  // Escuchar cuando el usuario se suscribe
-  webpushr('on', 'subscribe', function(sid) {
-    console.log('Webpushr suscripción exitosa, SID:', sid);
-    saveDeviceTokenInFirebase(sid);
-  });
-
-  // Intentar obtener el ID de suscriptor si ya está registrado
-  webpushr('fetch_id', function(sid) {
-    if (sid) {
-      console.log('Webpushr suscriptor existente obtenido con fetch_id, SID:', sid);
-      saveDeviceTokenInFirebase(sid);
-      renderNotifModalContents();
+      if (firebaseMessaging) {
+        firebaseMessaging.getToken()
+          .then((currentToken) => {
+            if (currentToken) {
+              saveDeviceTokenInFirebase(currentToken);
+            }
+          })
+          .catch((err) => {
+            console.warn('FCM token error:', err);
+          });
+      }
+    } else {
+      showToast('Notificaciones no permitidas 🔕');
     }
   });
-
-  webpushrInitialized = true;
-  console.log("Webpushr SDK configurado para el rol:", state.user.role);
 }
 
 function saveDeviceTokenInFirebase(token) {
-  if (!state.room || !state.room.notificationsConfig) return;
+  if (!state.room || !state.user) return;
   const tokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
+  if (!state.room.notificationsConfig) state.room.notificationsConfig = {};
   if (state.room.notificationsConfig[tokenKey] !== token) {
     updateState(room => {
+      if (!room.notificationsConfig) room.notificationsConfig = {};
       room.notificationsConfig[tokenKey] = token;
     });
   }
 }
 
-function subscribeThisDevice() {
-  if (typeof webpushr !== 'undefined' && webpushrScriptLoaded) {
-    webpushr('subscribe');
-  } else {
-    showToast('Iniciando servicio de notificaciones, intenta de nuevo en un segundo...');
-    initWebpushr();
-  }
-}
-
 function publishNotification(title, message, tags = 'bell') {
-  if (!state.room || !state.room.notificationsConfig) return;
-  const config = state.room.notificationsConfig;
-  if (!config.enabled || !config.restKey || !config.authToken) return;
+  if (!state.room || !state.user) return;
 
-  const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
-  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-
-  fetch('https://api.webpushr.com/v1/notification/send/attribute', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'webpushrKey': config.restKey,
-      'webpushrAuthToken': config.authToken
-    },
-    body: JSON.stringify({
+  // Enviar a la cola de acciones de Firebase RTDB para entrega en tiempo real a la pareja
+  if (actionsRef) {
+    const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
+    actionsRef.push({
+      action: 'notification',
+      sender: state.user.name,
+      targetRole: partnerRole,
       title: title,
       message: message,
-      target_url: window.location.origin + basePath,
-      attribute: [
-        {
-          key: 'user_id',
-          value: partnerRole
-        }
-      ]
-    })
-  })
-  .then(response => console.log('Webpushr Notification sent to partner.'))
-  .catch(error => console.error('Error sending Webpushr Notification:', error));
+      tags: tags,
+      timestamp: Date.now()
+    }).catch(e => console.error("Error enviando notificación a Firebase:", e));
+  }
 }
 
 function publishTestNotification(targetUserRole) {
-  if (!state.room || !state.room.notificationsConfig) {
-    return showToast('Configuración no disponible');
-  }
-  const config = state.room.notificationsConfig;
-  if (!config.restKey || !config.authToken) return showToast('Faltan credenciales de envío en Webpushr');
-
+  if (!state.room || !state.user) return showToast('Configuración no disponible');
   const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
-  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-
-  fetch('https://api.webpushr.com/v1/notification/send/attribute', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'webpushrKey': config.restKey,
-      'webpushrAuthToken': config.authToken
-    },
-    body: JSON.stringify({
-      title: `Prueba para ${targetName} 🔔`,
-      message: `¡Prueba exitosa! Estás recibiendo notificaciones nativas con Webpushr en tu celular. ❤️`,
-      target_url: window.location.origin + basePath,
-      attribute: [
-        {
-          key: 'user_id',
-          value: targetUserRole
-        }
-      ]
-    })
-  })
-  .then(() => showToast(`Notificación de prueba enviada a ${targetName}`))
-  .catch(error => {
-    console.error(error);
-    showToast('Error al enviar la notificación de prueba');
-  });
+  
+  publishNotification(`Prueba para ${targetName} 🔔`, `¡Prueba de Firebase exitosa! Recibes notificaciones nativas en tu espacio ❤️`, 'heart');
+  showToast(`Notificación de prueba enviada a ${targetName}`);
 }
 
 function openNotifModal() {
-  initWebpushr(); // Intentar inicializar al abrir el modal por si el SDK ya se cargó
+  initFirebaseNotifications();
   renderNotifModalContents();
   const modal = document.getElementById('notif-modal');
   if (modal) modal.classList.replace('hidden', 'flex');
 }
 
-// Cierra el modal de notificaciones
 function closeNotifModal() {
   const modal = document.getElementById('notif-modal');
   if (modal) modal.classList.replace('flex', 'hidden');
 }
 
 function renderNotifModalContents() {
-  if (!state.room || !state.room.notificationsConfig) return;
+  if (!state.room) return;
+  if (!state.room.notificationsConfig) state.room.notificationsConfig = { enabled: true };
   const config = state.room.notificationsConfig;
   
   const mobileToggle = document.getElementById('mobile-notif-toggle');
@@ -2713,42 +2634,38 @@ function renderNotifModalContents() {
     mobileSetup.style.display = config.enabled ? 'flex' : 'none';
   }
 
-  // Mostrar estado del dispositivo actual
+  // Estado del dispositivo actual
   const myTokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
   const myToken = config[myTokenKey];
   const deviceStatusEl = document.getElementById('device-notif-status');
   if (deviceStatusEl) {
-    if (myToken) {
-      deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Tu Celular: Suscrito y Activo</span>';
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      deviceStatusEl.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Tu Celular: Activo y Conectado a Firebase</span>';
     } else {
-      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Tu Celular: No registrado / pendiente</span>';
+      deviceStatusEl.innerHTML = '<span class="text-yellow-400 flex items-center gap-1">🟡 Tu Celular: Permiso pendiente</span>';
     }
   }
 
-  // Mostrar si la pareja está suscrita
+  // Estado de la pareja
   const partnerTokenKey = state.user.role === 'user1' ? 'user2Token' : 'user1Token';
   const partnerToken = config[partnerTokenKey];
   const partnerName = state.partner ? state.partner.name : 'Tu pareja';
   const partnerStatusEl = document.getElementById('partner-notif-status');
   if (partnerStatusEl) {
-    if (partnerToken) {
-      partnerStatusEl.innerHTML = `<span class="text-green-400">🟢 Celular de ${partnerName}: Listo</span>`;
-    } else {
-      partnerStatusEl.innerHTML = `<span class="text-white/40">🔴 Celular de ${partnerName}: No registrado aún</span>`;
-    }
+    partnerStatusEl.innerHTML = `<span class="text-green-400 font-semibold flex items-center gap-1">🟢 Pareja (${partnerName}): Listo para recibir notificaciones</span>`;
   }
 
   const browserStatus = document.getElementById('browser-notif-status');
   const browserBtn = document.getElementById('browser-notif-btn');
-  
   const notifBanner = document.getElementById('notif-banner');
+
   if (typeof Notification !== 'undefined') {
     if (Notification.permission === 'granted') {
-      if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Permiso del Navegador Concedido</span>';
+      if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Permiso Concedido</span>';
       if (browserBtn) browserBtn.style.display = 'none';
       if (notifBanner) notifBanner.classList.add('hidden');
     } else if (Notification.permission === 'denied') {
-      if (browserStatus) browserStatus.textContent = 'Rechazadas (Desbloquéalas en los ajustes)';
+      if (browserStatus) browserStatus.textContent = 'Rechazadas (Desbloquéalas en los ajustes del navegador)';
       if (browserBtn) browserBtn.style.display = 'none';
       if (notifBanner) notifBanner.classList.add('hidden');
     } else {
@@ -2773,10 +2690,9 @@ function toggleMobileNotifications(checked) {
   if (mobileSetup) {
     mobileSetup.style.display = checked ? 'flex' : 'none';
   }
-  showToast(checked ? 'Notificaciones móviles activadas 🔔' : 'Notificaciones móviles desactivadas 🔕');
+  showToast(checked ? 'Notificaciones activadas 🔔' : 'Notificaciones desactivadas 🔕');
 }
 
-// Envía notificación de prueba al celular de la pareja
 function sendTestNotificationToPartner() {
   if (!state.user) return;
   const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
@@ -2784,17 +2700,7 @@ function sendTestNotificationToPartner() {
 }
 
 function requestBrowserNotificationPermission() {
-  if (typeof Notification === 'undefined') return;
-  Notification.requestPermission().then(permission => {
-    updateNotifIcon();
-    renderNotifModalContents();
-    if (permission === 'granted') {
-      showToast('¡Notificaciones del navegador activadas! 🔔');
-      sendLocalNotification('¡Hola!', 'Las notificaciones locales están activadas para vuestro espacio ❤️');
-    } else {
-      showToast('Notificaciones rechazadas 🔕');
-    }
-  });
+  requestFirebasePermission();
 }
 
 // ===== CONEXIÓN FIREBASE Y SINCRONIZACIÓN =====
@@ -2830,13 +2736,11 @@ function connectMQTT() {
 
     const remoteState = snapshot.val();
     if (remoteState) {
-      // Inicializar y guardar la configuración de notificaciones móviles en Firebase si no existe
+      // Inicializar y guardar la configuración de notificaciones en Firebase si no existe
       if (!remoteState.notificationsConfig) {
         remoteState.notificationsConfig = {
           enabled: true,
-          trackingKey: "BDoQ3d8qfruI_fkq6k0Iuok8FBgvefcB8bwCZsiUz80qY0ViRZY6osDmur1RuvUCOiHb_Ua9cDUizaBDCAFnngY",
-          restKey: "6ddcce97fb9371882e7da4804475918c",
-          authToken: "122695",
+          provider: "firebase",
           user1Token: "",
           user2Token: "",
           notifyOnLogin: true,
@@ -2950,9 +2854,9 @@ function connectMQTT() {
           renderAll();
         }
 
-        // Inicializar Webpushr si está habilitado y tiene Tracking Key
-        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled && state.room.notificationsConfig.trackingKey) {
-          initWebpushr();
+        // Inicializar Notificaciones de Firebase si están habilitadas
+        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled) {
+          initFirebaseNotifications();
         }
       }
     }
@@ -2961,25 +2865,27 @@ function connectMQTT() {
     console.error("Firebase read error", error);
   });
 
-  // 2. Escuchar pokes de amor en tiempo real
+  // 2. Escuchar pokes y notificaciones de amor en tiempo real
   actionsRef.limitToLast(1).on('child_added', (snapshot) => {
     const act = snapshot.val();
     // Solo disparar si la acción es nueva y no es del usuario actual
     if (act && act.sender !== state.user.name && (Date.now() - act.timestamp < 10000)) {
-      const actionMap = {
-        'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
-        'hug': { emoji: '🫂', text: 'te mandó un abrazo de oso' },
-        'heart': { emoji: '💖', text: 'te mandó un te amo' },
-        'miss': { emoji: '🥺', text: 'te extraña mucho' }
-      };
-      const actDetail = actionMap[act.action] || { emoji: '❤️', text: 'te mandó amor' };
-      if (act.action === 'kiss') audio.playKiss();
-      else audio.playPoke();
-      triggerEmojiExplosion(actDetail.emoji);
-      showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
-      
-      // Enviar notificación local del poke
-      sendLocalNotification(`¡Amor de ${act.sender}! ${actDetail.emoji}`, `${act.sender} ${actDetail.text}`);
+      if (act.action === 'notification') {
+        sendLocalNotification(act.title || `Amor de ${act.sender}`, act.message || 'Te ha enviado algo bonito');
+      } else {
+        const actionMap = {
+          'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
+          'hug': { emoji: '🫂', text: 'te mandó un abrazo de oso' },
+          'heart': { emoji: '💖', text: 'te mandó un te amo' },
+          'miss': { emoji: '🥺', text: 'te extraña mucho' }
+        };
+        const actDetail = actionMap[act.action] || { emoji: '❤️', text: 'te mandó amor' };
+        if (act.action === 'kiss') audio.playKiss();
+        else audio.playPoke();
+        triggerEmojiExplosion(actDetail.emoji);
+        showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
+        sendLocalNotification(`¡Amor de ${act.sender}! ${actDetail.emoji}`, `${act.sender} ${actDetail.text}`);
+      }
     }
   });
 }
