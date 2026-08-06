@@ -817,6 +817,25 @@
     
     <!-- DASHBOARD (INICIO) CON DISEÑO COMPACTO Y ADAPTATIVO CON SCROLL FLUIDO -->
     <div id="section-dashboard" class="section active">
+      <!-- BANNER DE NOTIFICACIONES PENDIENTES -->
+      <div id="notif-banner" class="glass rounded-2xl p-4 mb-6 border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-pink-500/10 flex flex-wrap items-center justify-between gap-3 hidden">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-300">
+            <i data-lucide="bell-ring" class="w-4 h-4 animate-bounce"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">Notificaciones activas en tiempo real</div>
+            <div class="text-[11px] text-white/70">Recibe avisos cuando tu pareja te envíe besos, mensajes o juegue contigo.</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openNotifModal()" class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5">
+            <i data-lucide="bell" class="w-3.5 h-3.5"></i> Activar Notificaciones
+          </button>
+          <button onclick="document.getElementById('notif-banner').remove()" class="btn-ghost text-xs p-1 px-2 text-white/50">✕</button>
+        </div>
+      </div>
+
       <div class="flex flex-col md:grid md:grid-cols-3 gap-6 mb-6">
         <!-- COLUMNA 1: CONTADOR DE ANIVERSARIO -->
         <div class="glass rounded-3xl p-6 flex flex-col justify-between h-auto min-h-[220px] md:h-full relative overflow-hidden pb-6">
@@ -2483,6 +2502,10 @@ function updateNotifIcon() {
 }
 
 function sendLocalNotification(title, body) {
+  if (typeof audio !== 'undefined' && audio.enabled) {
+    audio.playPoke();
+  }
+  showToast(`${title}: ${body}`, 4000);
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try {
       new Notification(title, {
@@ -2718,22 +2741,23 @@ function renderNotifModalContents() {
   const browserStatus = document.getElementById('browser-notif-status');
   const browserBtn = document.getElementById('browser-notif-btn');
   
-  if (typeof Notification === 'undefined') {
-    if (browserStatus) browserStatus.textContent = 'No soportadas por este navegador';
-    if (browserBtn) browserBtn.style.display = 'none';
-  } else {
+  const notifBanner = document.getElementById('notif-banner');
+  if (typeof Notification !== 'undefined') {
     if (Notification.permission === 'granted') {
       if (browserStatus) browserStatus.innerHTML = '<span class="text-green-400 font-semibold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Permiso del Navegador Concedido</span>';
       if (browserBtn) browserBtn.style.display = 'none';
+      if (notifBanner) notifBanner.classList.add('hidden');
     } else if (Notification.permission === 'denied') {
       if (browserStatus) browserStatus.textContent = 'Rechazadas (Desbloquéalas en los ajustes)';
       if (browserBtn) browserBtn.style.display = 'none';
+      if (notifBanner) notifBanner.classList.add('hidden');
     } else {
       if (browserStatus) browserStatus.textContent = 'Pendiente de activar';
       if (browserBtn) {
         browserBtn.style.display = 'inline-block';
         browserBtn.textContent = 'Activar';
       }
+      if (notifBanner) notifBanner.classList.remove('hidden');
     }
   }
   
@@ -2878,6 +2902,34 @@ function connectMQTT() {
             } else if (newFlota.phase === 'battle' && newFlota.turn === state.user.role && oldFlota.turn !== state.user.role && !newFlota.winner) {
               sendLocalNotification('Hundir la Flota del Amor 🚢', `¡Es tu turno para disparar, busca los tesoros de ${partnerName}!`);
             }
+          }
+
+          // F. Vales de Amor nuevos o canjeados
+          const oldCoupons = state.room.coupons || [];
+          const newCoupons = remoteState.coupons || [];
+          if (newCoupons.length > oldCoupons.length) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Vale de Amor 🎟️', `¡${partnerName} te ha regalado un nuevo vale de amor!`);
+          } else if (newCoupons.some((c, i) => c && oldCoupons[i] && c.status === 'redeemed' && oldCoupons[i].status !== 'redeemed')) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Vale Canjeado 🎟️', `¡${partnerName} ha canjeado un vale de amor!`);
+          }
+
+          // G. Fotos nuevas en el álbum
+          const oldPhotos = state.room.gallery || [];
+          const newPhotos = remoteState.gallery || [];
+          if (newPhotos.length > oldPhotos.length) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            sendLocalNotification('Álbum de Fotos 📸', `¡${partnerName} ha subido una nueva foto!`);
+          }
+
+          // H. Verdad o Reto
+          const oldTodTs = state.room.currentTod?.timestamp || 0;
+          const newTodTs = remoteState.currentTod?.timestamp || 0;
+          if (newTodTs > oldTodTs && remoteState.currentTod?.player !== state.user.name) {
+            const partnerName = newPartnerObj?.name || 'Tu pareja';
+            const todType = remoteState.currentTod?.type === 'truth' ? 'Verdad 💬' : 'Reto ⚡';
+            sendLocalNotification('Verdad o Reto 🎲', `¡${partnerName} sacó una ${todType}!`);
           }
         }
 
@@ -3125,6 +3177,8 @@ function setMood(mood) {
     room[state.user.role].mood = mood;
     room[state.user.role].moodDate = today;
   });
+  const moodEmoji = { happy: '😊', loving: '💖', sad: '😢', tired: '🥱', angry: '😡' }[mood] || '✨';
+  publishNotification(`Mood de ${state.user.name} ${moodEmoji}`, `¡${state.user.name} se siente ${moodEmoji} hoy! Entra a ver su nota. ❤️`, 'smile,heart');
   showToast('¡Mood actualizado! 😍');
   audio.playPoke();
 }
@@ -3136,6 +3190,9 @@ function saveMoodNote() {
     room[state.user.role].moodNote = note || null;
     room[state.user.role].moodDate = today;
   });
+  if (note) {
+    publishNotification(`Nota de ${state.user.name} 📝`, `¡${state.user.name} te ha dejado una nota: "${note}"! 💕`, 'memo,heart');
+  }
   showToast('Nota de mood guardada');
 }
 
@@ -3629,6 +3686,7 @@ function todChoose(type) {
   updateState(room => {
     room.currentTod = { type, text, player: state.user.name, timestamp: Date.now() };
   });
+  publishNotification('Verdad o Reto 🎲', `¡${state.user.name} eligió ${type === 'truth' ? 'Verdad 💬' : 'Reto ⚡'}! Entra a ver cuál le tocó. ❤️`, 'game_die,heart');
   audio.playPoke();
 }
 
@@ -3681,6 +3739,9 @@ function quizVote(vote) {
     if (!room.quizVotes[idx]) room.quizVotes[idx] = { user1: null, user2: null };
     room.quizVotes[idx][state.user.role] = currentVote === vote ? null : vote;
   });
+  if (currentVote !== vote) {
+    publishNotification('Quiz de Pareja ❓', `¡${state.user.name} votó en el Quiz de hoy! Responde para ver si coinciden. ❤️`, 'question,heart');
+  }
   showToast(currentVote === vote ? 'Voto retirado' : '¡Voto registrado!');
   audio.playFlip();
 }
@@ -4191,19 +4252,23 @@ function giftCoupon(title) {
     if (!room.coupons) room.coupons = [];
     room.coupons.push(newCoupon);
   });
+  publishNotification('Vale de Amor 🎟️', `¡${state.user.name} te regaló un "${title}"! 🎁`, 'gift,heart');
   showToast(`🎁 Le regalaste un "${title}" a ${state.partner?.name || 'pareja'}`);
   audio.playMatch();
 }
 
 function redeemCoupon(id) {
   audio.playKiss();
+  let couponTitle = 'vale';
   updateState(room => {
     const coupon = room.coupons.find(c => c.id === id);
     if (coupon) {
       coupon.status = 'redeemed';
       coupon.redeemedTime = Date.now();
+      couponTitle = coupon.title;
     }
   });
+  publishNotification('Vale Canjeado 🎟️', `¡${state.user.name} canjeó el "${couponTitle}"! 💕`, 'tickets,heart');
   triggerEmojiExplosion('🎟️');
   showToast(`🎟️ Has canjeado el vale. ¡A disfrutarlo!`);
 }
@@ -4245,14 +4310,20 @@ function renderRetos() {
 
 function toggleReto(index) {
   audio.playMatch();
+  let isDone = false;
   updateState(room => {
     const defaultCount = (room.retos || []).length;
     if (index < defaultCount) {
       room.retos[index].done = !room.retos[index].done;
+      isDone = room.retos[index].done;
     } else {
       room.customRetos[index - defaultCount].done = !room.customRetos[index - defaultCount].done;
+      isDone = room.customRetos[index - defaultCount].done;
     }
   });
+  if (isDone) {
+    publishNotification('Reto Cumplido 🎯', `¡${state.user.name} completó un reto de la lista! 🎉`, 'sparkles,heart');
+  }
   showToast('Lista de retos actualizada');
 }
 
@@ -4264,6 +4335,7 @@ function addCustomReto() {
     if (!room.customRetos) room.customRetos = [];
     room.customRetos.push({ id: 'c' + Date.now(), text, done: false });
   });
+  publishNotification('Nuevo Reto 🎯', `¡${state.user.name} añadió un nuevo reto: "${text}"! 💖`, 'sparkles,heart');
   input.value = '';
   showToast('Reto personalizado añadido');
   audio.playPoke();
