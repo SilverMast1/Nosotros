@@ -22,7 +22,27 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification?.body || payload.data?.body || '¡Tienes una nueva interacción en vuestro espacio!',
     icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
     badge: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-    vibrate: [200, 100, 200]
+    vibrate: [200, 100, 200],
+    data: {
+      url: 'https://silvermast1.github.io/Nosotros/'
+    }
   };
   self.registration.showNotification(title, options);
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || 'https://silvermast1.github.io/Nosotros/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('Nosotros') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
