@@ -2539,6 +2539,7 @@ function updateNotifIcon() {
 
 let lastNotificationKey = '';
 let lastNotificationTime = 0;
+const NOTIFICATION_COOLDOWN_MS = 8000; // 8 segundos de espera entre notificaciones para evitar trabadas cuando ambos están conectados al mismo tiempo
 
 function sendLocalNotification(title, body, options = {}) {
   // 1. Verificar si las notificaciones están activadas globalmente
@@ -2554,14 +2555,15 @@ function sendLocalNotification(title, body, options = {}) {
     }
   }
 
-  // 3. Evitar notificaciones duplicadas idénticas en menos de 3 segundos
-  const notifKey = `${title}:${body}`;
+  // 3. Evitar notificaciones consecutivas cuando ambos están al mismo tiempo (cooldown de 8 segundos)
   const now = Date.now();
-  if (notifKey === lastNotificationKey && (now - lastNotificationTime < 3000)) {
+  const cooldownMs = options.forceOSNotification ? 1000 : NOTIFICATION_COOLDOWN_MS;
+  if (now - lastNotificationTime < cooldownMs) {
+    console.log('[Notif Cooldown] Omitiendo notificación cercana para evitar congelamiento:', title);
     return;
   }
-  lastNotificationKey = notifKey;
   lastNotificationTime = now;
+  lastNotificationKey = `${title}:${body}`;
 
   // 4. In-App Toast & Audio
   if (!options.skipToast) {
