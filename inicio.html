@@ -2555,14 +2555,15 @@ function requestFirebasePermission() {
       sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️');
 
       if (firebaseMessaging) {
-        firebaseMessaging.getToken()
+        firebaseMessaging.getToken({ vapidKey: 'BMqdrvSO8zi0FDfAXMOqpkJnuDEZjdvsPdLoqp4PT2H8Y-4DeQ9s_fHd3NuSYRKB-AHfWE3xBczqM1RmcRXrLFw' })
           .then((currentToken) => {
             if (currentToken) {
+              console.log('[Firebase FCM] Token de dispositivo registrado:', currentToken);
               saveDeviceTokenInFirebase(currentToken);
             }
           })
           .catch((err) => {
-            console.warn('FCM token error:', err);
+            console.warn('[Firebase FCM] Error al obtener token FCM:', err);
           });
       }
     } else {
