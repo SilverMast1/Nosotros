@@ -1635,6 +1635,42 @@
           <div id="partner-notif-status" class="text-xs font-semibold text-white/80"></div>
         </div>
 
+        <!-- CATEGORÍAS DE NOTIFICACIONES -->
+        <div class="flex flex-col gap-2 border-t border-white/5 pt-3">
+          <h4 class="text-xs font-bold text-pink-300 flex items-center gap-1">
+            <i data-lucide="sliders" class="w-3.5 h-3.5 text-pink-400"></i> Personalizar Avisos
+          </h4>
+          <p class="text-[10px] text-white/50 mb-1 leading-tight">Elige qué avisos recibir para evitar notificaciones innecesarias o lentitud.</p>
+          
+          <label class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 cursor-pointer text-xs">
+            <span class="flex items-center gap-2 text-pink-200">
+              <span>💖</span> Besos, Abrazos y Pokes
+            </span>
+            <input type="checkbox" id="notif-cat-love" onchange="toggleNotificationCategory('notifyLoveActions', this.checked)" class="accent-pink-500 w-4 h-4 rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 cursor-pointer text-xs">
+            <span class="flex items-center gap-2 text-purple-200">
+              <span>💬</span> Mensajes y Notas
+            </span>
+            <input type="checkbox" id="notif-cat-msg" onchange="toggleNotificationCategory('notifyMessages', this.checked)" class="accent-pink-500 w-4 h-4 rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 cursor-pointer text-xs">
+            <span class="flex items-center gap-2 text-amber-200">
+              <span>🎮</span> Juegos (Turnos 3 en Raya, Flota)
+            </span>
+            <input type="checkbox" id="notif-cat-games" onchange="toggleNotificationCategory('notifyGames', this.checked)" class="accent-pink-500 w-4 h-4 rounded">
+          </label>
+
+          <label class="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 cursor-pointer text-xs">
+            <span class="flex items-center gap-2 text-blue-200">
+              <span>🎟️</span> Vales de Amor y Fotos
+            </span>
+            <input type="checkbox" id="notif-cat-coupons" onchange="toggleNotificationCategory('notifyCoupons', this.checked)" class="accent-pink-500 w-4 h-4 rounded">
+          </label>
+        </div>
+
         <!-- GUÍA PASO A PASO -->
         <div class="flex flex-col gap-2.5 border-t border-white/5 pt-2">
           <h4 class="text-xs font-bold text-pink-300 flex items-center gap-1">
@@ -2501,35 +2537,72 @@ function updateNotifIcon() {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-function sendLocalNotification(title, body) {
-  if (typeof audio !== 'undefined' && audio.enabled) {
-    audio.playPoke();
-  }
-  showToast(`${title}: ${body}`, 4000);
-  
-  // En celulares (Android Chrome / iOS Safari), new Notification() falla; se debe usar swRegistration.showNotification()
-  if (swRegistration && 'showNotification' in swRegistration) {
-    try {
-      swRegistration.showNotification(title, {
-        body: body,
-        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-        badge: 'https://silvermast1.github.io/Nosotros/favicon.ico',
-        vibrate: [200, 100, 200]
-      });
-      return;
-    } catch (e) {
-      console.warn("Fallback to new Notification", e);
+let lastNotificationKey = '';
+let lastNotificationTime = 0;
+
+function sendLocalNotification(title, body, options = {}) {
+  // 1. Verificar si las notificaciones están activadas globalmente
+  const config = state.room?.notificationsConfig || { enabled: true };
+  if (!config.enabled) return;
+
+  // 2. Filtrar por categoría (Desactivar por defecto notifyGames y notifyCoupons para evitar congelamientos)
+  if (options.category) {
+    if (options.category === 'notifyGames' || options.category === 'notifyCoupons') {
+      if (config[options.category] !== true) return;
+    } else {
+      if (config[options.category] === false) return;
     }
   }
 
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    try {
-      new Notification(title, {
-        body: body,
-        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico'
-      });
-    } catch (e) {
-      console.error("Error al disparar notificación:", e);
+  // 3. Evitar notificaciones duplicadas idénticas en menos de 3 segundos
+  const notifKey = `${title}:${body}`;
+  const now = Date.now();
+  if (notifKey === lastNotificationKey && (now - lastNotificationTime < 3000)) {
+    return;
+  }
+  lastNotificationKey = notifKey;
+  lastNotificationTime = now;
+
+  // 4. In-App Toast & Audio
+  if (!options.skipToast) {
+    showToast(`${title}: ${body}`, 4000);
+  }
+  if (!options.skipAudio && typeof audio !== 'undefined' && audio.enabled) {
+    audio.playPoke();
+  }
+
+  // 5. Notificación Nativa del Sistema Operativo
+  // IMPORTANTE: Para evitar que el celular / navegador se trabe mientras se usa la app,
+  // las notificaciones nativas del SO SOLO se ejecutan si la pestaña está en SEGUNDO PLANO (document.hidden)
+  // o si es una notificación forzada (como una prueba manual).
+  const isBackground = typeof document !== 'undefined' && document.hidden;
+  if (isBackground || options.forceOSNotification) {
+    if (swRegistration && 'showNotification' in swRegistration) {
+      try {
+        swRegistration.showNotification(title, {
+          body: body,
+          icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+          badge: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+          vibrate: [200, 100, 200],
+          tag: options.tag || 'nosotros-notif',
+          renotify: true
+        });
+        return;
+      } catch (e) {
+        console.warn("Fallback to new Notification", e);
+      }
+    }
+
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body: body,
+          icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+          tag: options.tag || 'nosotros-notif'
+        });
+      } catch (e) {
+        console.error("Error al disparar notificación:", e);
+      }
     }
   }
 }
@@ -2562,7 +2635,7 @@ function initFirebaseNotifications() {
       console.log('[Firebase FCM] Mensaje en primer plano:', payload);
       const title = payload.notification?.title || payload.data?.title || 'Nosotros 💕';
       const body = payload.notification?.body || payload.data?.body || '';
-      sendLocalNotification(title, body);
+      sendLocalNotification(title, body, { category: 'notifyLoveActions' });
     });
   } catch (e) {
     console.warn("Firebase Messaging no disponible:", e);
@@ -2601,8 +2674,8 @@ function requestFirebasePermission() {
     updateNotifIcon();
     renderNotifModalContents();
     if (permission === 'granted') {
-      showToast('¡Notificaciones de Firebase activadas! 🔔');
-      sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️');
+      showToast('¡Notificaciones activadas! 🔔');
+      sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️', { forceOSNotification: true });
 
       if (swRegistration) {
         registerFCMToken(swRegistration);
@@ -2628,11 +2701,10 @@ function saveDeviceTokenInFirebase(token) {
   console.log(`Token FCM guardado en Firebase para ${state.user.role}:`, token);
 }
 
-function publishNotification(title, message, tags = 'bell') {
+function publishNotification(title, message, tags = 'bell', category = 'notifyMessages') {
   if (!state.room || !state.user) return;
   const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
 
-  // 1. Enviar a la cola de acciones de Firebase RTDB para entrega en tiempo real a la pareja
   if (actionsRef) {
     actionsRef.push({
       action: 'notification',
@@ -2641,17 +2713,18 @@ function publishNotification(title, message, tags = 'bell') {
       title: title,
       message: message,
       tags: tags,
+      category: category,
       timestamp: Date.now()
     }).catch(e => console.error("Error enviando notificación a Firebase:", e));
   }
-
 }
 
 function publishTestNotification(targetUserRole) {
   if (!state.room || !state.user) return showToast('Configuración no disponible');
   const targetName = targetUserRole === 'user1' ? 'Gabriel' : 'Alexa';
   
-  publishNotification(`Prueba para ${targetName} 🔔`, `¡Prueba de Firebase exitosa! Recibes notificaciones nativas en tu espacio ❤️`, 'heart');
+  publishNotification(`Prueba para ${targetName} 🔔`, `¡Prueba de Firebase exitosa! Recibes notificaciones nativas en tu espacio ❤️`, 'heart', 'notifyLoveActions');
+  sendLocalNotification(`Prueba para ti 🔔`, `Notificación de prueba ejecutada ❤️`, { forceOSNotification: true });
   showToast(`Notificación de prueba enviada a ${targetName}`);
 }
 
@@ -2667,9 +2740,17 @@ function closeNotifModal() {
   if (modal) modal.classList.replace('flex', 'hidden');
 }
 
+function toggleNotificationCategory(category, checked) {
+  updateState(room => {
+    if (!room.notificationsConfig) room.notificationsConfig = {};
+    room.notificationsConfig[category] = checked;
+  });
+  showToast(checked ? 'Preferencia activada 🔔' : 'Preferencia desactivada 🔕');
+}
+
 function renderNotifModalContents() {
   if (!state.room) return;
-  if (!state.room.notificationsConfig) state.room.notificationsConfig = { enabled: true };
+  if (!state.room.notificationsConfig) state.room.notificationsConfig = { enabled: true, notifyLoveActions: true, notifyMessages: true, notifyGames: false, notifyCoupons: false };
   const config = state.room.notificationsConfig;
   
   const mobileToggle = document.getElementById('mobile-notif-toggle');
@@ -2679,6 +2760,19 @@ function renderNotifModalContents() {
   if (mobileSetup) {
     mobileSetup.style.display = config.enabled ? 'flex' : 'none';
   }
+
+  // Toggles por categoría
+  const catLove = document.getElementById('notif-cat-love');
+  if (catLove) catLove.checked = config.notifyLoveActions !== false;
+
+  const catMsg = document.getElementById('notif-cat-msg');
+  if (catMsg) catMsg.checked = config.notifyMessages !== false;
+
+  const catGames = document.getElementById('notif-cat-games');
+  if (catGames) catGames.checked = config.notifyGames === true;
+
+  const catCoupons = document.getElementById('notif-cat-coupons');
+  if (catCoupons) catCoupons.checked = config.notifyCoupons === true;
 
   // Estado del dispositivo actual
   const myTokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
@@ -2789,10 +2883,10 @@ function connectMQTT() {
           provider: "firebase",
           user1Token: "",
           user2Token: "",
-          notifyOnLogin: true,
-          notifyOnGames: true,
-          notifyOnQuestions: true,
-          notifyOnPokes: true
+          notifyLoveActions: true,
+          notifyMessages: true,
+          notifyGames: false,
+          notifyCoupons: false
         };
         roomRef.child('notificationsConfig').set(remoteState.notificationsConfig)
           .catch(e => console.error("Error setting initial notificationsConfig:", e));
@@ -2800,93 +2894,6 @@ function connectMQTT() {
       if (!state.room || remoteState.lastUpdated !== state.room.lastUpdated || JSON.stringify(remoteState.notificationsConfig) !== JSON.stringify(state.room.notificationsConfig)) {
         const oldRuletaTs = state.room?.currentRuleta?.timestamp || 0;
         const newRuletaTs = remoteState?.currentRuleta?.timestamp || 0;
-        
-        // Analizar diferencias antes de sobreescribir el estado local
-        if (state.room) {
-          const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
-          const oldPartnerObj = state.room[partnerRole];
-          const newPartnerObj = remoteState[partnerRole];
-          
-          if (oldPartnerObj && newPartnerObj) {
-            // A. Nota de ánimo cambiada
-            if (newPartnerObj.moodNote !== oldPartnerObj.moodNote && newPartnerObj.moodNote) {
-              sendLocalNotification(`Mensaje de ánimo de ${newPartnerObj.name} 💕`, `Escribió: "${newPartnerObj.moodNote}"`);
-            } else if (newPartnerObj.mood !== oldPartnerObj.mood && newPartnerObj.mood) {
-              const moodEmoji = { happy: '😊', loving: '💖', sad: '😢', tired: '🥱', angry: '😡' }[newPartnerObj.mood] || '✨';
-              sendLocalNotification(`Estado de ${newPartnerObj.name} 💕`, `Se siente: ${moodEmoji}`);
-            }
-          }
-          
-          // B. Preguntas contestadas
-          const oldAnswers = state.room.answers || {};
-          const newAnswers = remoteState.answers || {};
-          if (Object.keys(newAnswers).length > Object.keys(oldAnswers).length) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Preguntas de amor 💬', `¡${partnerName} ha respondido una pregunta!`);
-          }
-          
-          // C. Invitación a jugar (Cambio de turno en 3 en Raya)
-          const oldTTT = state.room.ticTacToe;
-          const newTTT = remoteState.ticTacToe;
-          if (newTTT && oldTTT && newTTT.turn === state.user.role && oldTTT.turn !== state.user.role && !newTTT.winner) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Tres en Raya 🎮', `¡Es tu turno para jugar con ${partnerName}!`);
-          }
-
-          // D. Mensajes sorpresa nuevos
-          const oldSurprises = state.room.surpriseMessages || {};
-          const newSurprises = remoteState.surpriseMessages || {};
-          const partnerMsgKey = state.user.role === 'user1' ? 'user2Msg' : 'user1Msg';
-          if (newSurprises[partnerMsgKey] !== oldSurprises[partnerMsgKey] && newSurprises[partnerMsgKey]) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Mensaje sorpresa 🎁', `¡${partnerName} te ha dejado una sorpresa!`);
-          }
-
-          // E. Cambio de turno o estado en Hundir la Flota
-          const oldFlota = state.room.battleship;
-          const newFlota = remoteState.battleship;
-          if (newFlota && oldFlota) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            if (oldFlota.phase === 'placement' && newFlota.phase === 'battle') {
-              sendLocalNotification('Hundir la Flota del Amor 🚢', `¡Ambos han colocado sus barcos! ¡Comienza la batalla!`);
-            } else if (newFlota.phase === 'battle' && newFlota.turn === state.user.role && oldFlota.turn !== state.user.role && !newFlota.winner) {
-              sendLocalNotification('Hundir la Flota del Amor 🚢', `¡Es tu turno para disparar, busca los tesoros de ${partnerName}!`);
-            }
-          }
-
-          // F. Vales de Amor nuevos o canjeados
-          const oldCoupons = state.room.coupons || [];
-          const newCoupons = remoteState.coupons || [];
-          if (newCoupons.length > oldCoupons.length) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Vale de Amor 🎟️', `¡${partnerName} te ha regalado un nuevo vale de amor!`);
-          } else if (newCoupons.some((c, i) => c && oldCoupons[i] && c.status === 'redeemed' && oldCoupons[i].status !== 'redeemed')) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Vale Canjeado 🎟️', `¡${partnerName} ha canjeado un vale de amor!`);
-          }
-
-          // G. Fotos nuevas en el álbum
-          const oldPhotos = state.room.gallery || [];
-          const newPhotos = remoteState.gallery || [];
-          if (newPhotos.length > oldPhotos.length) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            sendLocalNotification('Álbum de Fotos 📸', `¡${partnerName} ha subido una nueva foto!`);
-          }
-
-          // H. Verdad o Reto
-          const oldTodTs = state.room.currentTod?.timestamp || 0;
-          const newTodTs = remoteState.currentTod?.timestamp || 0;
-          if (newTodTs > oldTodTs && remoteState.currentTod?.player !== state.user.name) {
-            const partnerName = newPartnerObj?.name || 'Tu pareja';
-            const todType = remoteState.currentTod?.type === 'truth' ? 'Verdad 💬' : 'Reto ⚡';
-            sendLocalNotification('Verdad o Reto 🎲', `¡${partnerName} sacó una ${todType}!`);
-          }
-        }
-
-        // D. Giro de ruleta por la pareja
-        if (newRuletaTs > oldRuletaTs && remoteState.currentRuleta.spinner !== state.user.name) {
-          sendLocalNotification('La Ruleta del Amor 🎡', `¡${remoteState.currentRuleta.spinner} está girando la ruleta!`);
-        }
 
         state.room = normalizeRoomState(remoteState);
         state.me = state.user.role === 'user1' ? state.room.user1 : state.room.user2;
@@ -2897,11 +2904,6 @@ function connectMQTT() {
         renderAll();
         if (newRuletaTs > oldRuletaTs) {
           triggerRouletteSpinAnimation(remoteState.currentRuleta.targetAngle, remoteState.currentRuleta.selectedIndex, remoteState.currentRuleta.spinner);
-        }
-
-        // Inicializar Notificaciones de Firebase si están habilitadas
-        if (state.room.notificationsConfig && state.room.notificationsConfig.enabled) {
-          initFirebaseNotifications();
         }
       }
     }
@@ -2916,7 +2918,9 @@ function connectMQTT() {
     // Solo disparar si la acción es nueva y no es del usuario actual
     if (act && act.sender !== state.user.name && (Date.now() - act.timestamp < 10000)) {
       if (act.action === 'notification') {
-        sendLocalNotification(act.title || `Amor de ${act.sender}`, act.message || 'Te ha enviado algo bonito');
+        sendLocalNotification(act.title || `Amor de ${act.sender}`, act.message || 'Te ha enviado algo bonito', {
+          category: act.category || 'notifyMessages'
+        });
       } else {
         const actionMap = {
           'kiss': { emoji: '💋', text: 'te mandó un beso gigante' },
@@ -2928,8 +2932,11 @@ function connectMQTT() {
         if (act.action === 'kiss') audio.playKiss();
         else audio.playPoke();
         triggerEmojiExplosion(actDetail.emoji);
-        showToast(`¡${act.sender} ${actDetail.text}! ${actDetail.emoji}`, 5000);
-        sendLocalNotification(`¡Amor de ${act.sender}! ${actDetail.emoji}`, `${act.sender} ${actDetail.text}`);
+        sendLocalNotification(`¡Amor de ${act.sender}! ${actDetail.emoji}`, `${act.sender} ${actDetail.text}`, {
+          category: 'notifyLoveActions',
+          skipToast: false,
+          skipAudio: true
+        });
       }
     }
   });
@@ -2958,17 +2965,6 @@ function sendLoveAction(actionType) {
     showToast(`¡Le enviaste un amor! ${emojiMap[actionType] || ''}`);
     if (actionType === 'kiss') audio.playKiss();
     else audio.playPoke();
-    
-    // Notificación móvil
-    const actionTextMap = {
-      'kiss': 'te mandó un beso gigante 😘',
-      'hug': 'te mandó un abrazo de oso 🤗',
-      'heart': 'te mandó un te amo 🥰',
-      'miss': 'te extraña mucho 💕'
-    };
-    const actionText = actionTextMap[actionType] || 'te mandó amor ❤️';
-    const tagMap = { 'kiss': 'kiss', 'hug': 'hugging', 'heart': 'heart', 'miss': 'pleading_face' };
-    publishNotification(`¡Amor de ${state.user.name}! ${emojiMap[actionType] || '❤️'}`, `${state.user.name} ${actionText}`, (tagMap[actionType] || 'heart') + ',heart');
   } else {
     showToast('Sin conexión');
   }
