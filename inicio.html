@@ -2500,6 +2500,22 @@ function sendLocalNotification(title, body) {
     audio.playPoke();
   }
   showToast(`${title}: ${body}`, 4000);
+  
+  // En celulares (Android Chrome / iOS Safari), new Notification() falla; se debe usar swRegistration.showNotification()
+  if (swRegistration && 'showNotification' in swRegistration) {
+    try {
+      swRegistration.showNotification(title, {
+        body: body,
+        icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+        badge: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+        vibrate: [200, 100, 200]
+      });
+      return;
+    } catch (e) {
+      console.warn("Fallback to new Notification", e);
+    }
+  }
+
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try {
       new Notification(title, {
