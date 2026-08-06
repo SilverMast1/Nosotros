@@ -2514,23 +2514,28 @@ function sendLocalNotification(title, body) {
 
 // ===== NOTIFICACIONES PURAS CON FIREBASE (FREE TIER) =====
 let firebaseMessaging = null;
+let swRegistration = null;
 
 function initFirebaseNotifications() {
   if (typeof firebase === 'undefined' || !firebase.messaging) return;
   try {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./firebase-messaging-sw.js')
+      const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+      const swUrl = basePath + 'firebase-messaging-sw.js';
+      
+      navigator.serviceWorker.register(swUrl, { scope: basePath })
         .then((reg) => {
-          console.log('[Firebase FCM] Service Worker registrado:', reg);
+          console.log('[Firebase FCM] Service Worker registrado en scope:', basePath, reg);
+          swRegistration = reg;
+          registerFCMToken(reg);
         })
         .catch((err) => {
-          console.warn('[Firebase FCM] Registro de Service Worker omitido:', err);
+          console.warn('[Firebase FCM] Error al registrar Service Worker:', err);
         });
     }
 
     firebaseMessaging = firebase.messaging();
 
-    // Notificaciones en primer plano
     firebaseMessaging.onMessage((payload) => {
       console.log('[Firebase FCM] Mensaje en primer plano:', payload);
       const title = payload.notification?.title || payload.data?.title || 'Nosotros 💕';
@@ -2539,6 +2544,25 @@ function initFirebaseNotifications() {
     });
   } catch (e) {
     console.warn("Firebase Messaging no disponible:", e);
+  }
+}
+
+function registerFCMToken(reg) {
+  if (!firebaseMessaging || !reg) return;
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    firebaseMessaging.getToken({
+      vapidKey: 'BMqdrvSO8zi0FDfAXMOqpkJnuDEZjdvsPdLoqp4PT2H8Y-4DeQ9s_fHd3NuSYRKB-AHfWE3xBczqM1RmcRXrLFw',
+      serviceWorkerRegistration: reg
+    })
+    .then((currentToken) => {
+      if (currentToken) {
+        console.log('[Firebase FCM] Token de dispositivo registrado:', currentToken);
+        saveDeviceTokenInFirebase(currentToken);
+      }
+    })
+    .catch((err) => {
+      console.warn('[Firebase FCM] Error al obtener token FCM:', err);
+    });
   }
 }
 
@@ -2558,19 +2582,13 @@ function requestFirebasePermission() {
       showToast('¡Notificaciones de Firebase activadas! 🔔');
       sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️');
 
-      if (!firebaseMessaging) initFirebaseNotifications();
-
-      if (firebaseMessaging) {
-        firebaseMessaging.getToken({ vapidKey: 'BMqdrvSO8zi0FDfAXMOqpkJnuDEZjdvsPdLoqp4PT2H8Y-4DeQ9s_fHd3NuSYRKB-AHfWE3xBczqM1RmcRXrLFw' })
-          .then((currentToken) => {
-            if (currentToken) {
-              console.log('[Firebase FCM] Token de dispositivo registrado:', currentToken);
-              saveDeviceTokenInFirebase(currentToken);
-            }
-          })
-          .catch((err) => {
-            console.warn('[Firebase FCM] Error al obtener token FCM:', err);
-          });
+      if (swRegistration) {
+        registerFCMToken(swRegistration);
+      } else if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          swRegistration = reg;
+          registerFCMToken(reg);
+        });
       }
     } else {
       showToast('Notificaciones no permitidas 🔕');
