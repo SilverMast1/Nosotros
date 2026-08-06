@@ -2624,10 +2624,10 @@ function saveDeviceTokenInFirebase(token) {
 
 function publishNotification(title, message, tags = 'bell') {
   if (!state.room || !state.user) return;
+  const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
 
-  // Enviar a la cola de acciones de Firebase RTDB para entrega en tiempo real a la pareja
+  // 1. Enviar a la cola de acciones de Firebase RTDB para entrega en tiempo real a la pareja
   if (actionsRef) {
-    const partnerRole = state.user.role === 'user1' ? 'user2' : 'user1';
     actionsRef.push({
       action: 'notification',
       sender: state.user.name,
@@ -2637,6 +2637,35 @@ function publishNotification(title, message, tags = 'bell') {
       tags: tags,
       timestamp: Date.now()
     }).catch(e => console.error("Error enviando notificación a Firebase:", e));
+  }
+
+  // 2. Si la pareja tiene token registrado y Server Key configurada en Firebase, enviar FCM Push a celular cerrado
+  const partnerTokenKey = partnerRole + 'Token';
+  const partnerToken = state.room.notificationsConfig ? state.room.notificationsConfig[partnerTokenKey] : null;
+  const serverKey = state.room.notificationsConfig ? state.room.notificationsConfig.serverKey : null;
+
+  if (partnerToken && serverKey) {
+    fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'key=' + serverKey
+      },
+      body: JSON.stringify({
+        to: partnerToken,
+        priority: 'high',
+        notification: {
+          title: title,
+          body: message,
+          icon: 'https://silvermast1.github.io/Nosotros/favicon.ico',
+          click_action: 'https://silvermast1.github.io/Nosotros/'
+        },
+        data: {
+          title: title,
+          body: message
+        }
+      })
+    }).catch(e => console.warn('[FCM Direct Push] Error:', e));
   }
 }
 
