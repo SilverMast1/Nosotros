@@ -2547,12 +2547,18 @@ function requestFirebasePermission() {
     return showToast('Notificaciones no soportadas en este navegador');
   }
 
+  if (!firebaseMessaging) {
+    initFirebaseNotifications();
+  }
+
   Notification.requestPermission().then((permission) => {
     updateNotifIcon();
     renderNotifModalContents();
     if (permission === 'granted') {
       showToast('¡Notificaciones de Firebase activadas! 🔔');
       sendLocalNotification('¡Firebase Conectado!', 'Las notificaciones están listas para vuestro espacio ❤️');
+
+      if (!firebaseMessaging) initFirebaseNotifications();
 
       if (firebaseMessaging) {
         firebaseMessaging.getToken({ vapidKey: 'BMqdrvSO8zi0FDfAXMOqpkJnuDEZjdvsPdLoqp4PT2H8Y-4DeQ9s_fHd3NuSYRKB-AHfWE3xBczqM1RmcRXrLFw' })
@@ -2573,15 +2579,13 @@ function requestFirebasePermission() {
 }
 
 function saveDeviceTokenInFirebase(token) {
-  if (!state.room || !state.user) return;
+  if (!state.room || !state.user || !token) return;
   const tokenKey = state.user.role === 'user1' ? 'user1Token' : 'user2Token';
-  if (!state.room.notificationsConfig) state.room.notificationsConfig = {};
-  if (state.room.notificationsConfig[tokenKey] !== token) {
-    updateState(room => {
-      if (!room.notificationsConfig) room.notificationsConfig = {};
-      room.notificationsConfig[tokenKey] = token;
-    });
-  }
+  updateState(room => {
+    if (!room.notificationsConfig) room.notificationsConfig = {};
+    room.notificationsConfig[tokenKey] = token;
+  });
+  console.log(`Token FCM guardado en Firebase para ${state.user.role}:`, token);
 }
 
 function publishNotification(title, message, tags = 'bell') {
