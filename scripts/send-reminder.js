@@ -179,8 +179,8 @@ async function main() {
     console.log(`Last updated: ${new Date(lastUpdated).toISOString()}`);
     console.log(`Minutes since last update: ${diffMinutes.toFixed(1)}m`);
 
-    if (diffMinutes >= 45) {
-      console.log('Sending FCM v1 Push Notification (every 45 minutes)...');
+    if (diffMinutes >= 30) {
+      console.log('Sending FCM v1 Push Notification (every 30 minutes)...');
       
       const randomMsg = REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
       
@@ -207,7 +207,7 @@ async function main() {
       const results = await Promise.all(promises);
       console.log('FCM v1 Push Notification results:', results);
     } else {
-      console.log('Recent activity detected under 45 minutes. No reminder needed.');
+      console.log('Recent activity detected under 30 minutes. No reminder needed.');
     }
   } catch (error) {
     console.error('Error in main execution:', error);
