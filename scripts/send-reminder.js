@@ -4,6 +4,13 @@ const https = require('https');
 const dbUrl = 'https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com/rooms/230426.json';
 const actionsUrl = 'https://nosotros-gabriel-alexa-default-rtdb.firebaseio.com/rooms/230426/actions.json';
 
+const REMINDER_MESSAGES = [
+  { title: '¡Vuestro espacio os extraña! 💕', message: '¿Qué tal si entráis a ver qué hay de nuevo hoy? 😍' },
+  { title: '¡Hora de enviarle amor a tu pareja! 💋', message: 'Entra al espacio de Nosotros a mandar un beso o sticker. ✨' },
+  { title: '¿Qué tal una pregunta diaria? 💬', message: 'Gabriel y Alexa, ¡hay una nueva pregunta o juego esperando! 🎲' },
+  { title: '¡Pensando en vosotros! 🥰', message: 'Entra a ver los moods o mandar un abrazo de oso. 🫂' }
+];
+
 function getFirebaseData() {
   return new Promise((resolve, reject) => {
     https.get(dbUrl, (res) => {
@@ -61,29 +68,31 @@ async function main() {
       return;
     }
 
-    // Comprobar si ha pasado tiempo desde la última interacción
+    // Comprobar si ha pasado tiempo desde la última interacción (en minutos)
     const lastUpdated = room.lastUpdated || Date.now();
-    const diffHours = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+    const diffMinutes = (Date.now() - lastUpdated) / (1000 * 60);
 
     console.log(`Last updated: ${new Date(lastUpdated).toISOString()}`);
-    console.log(`Hours since last update: ${diffHours.toFixed(2)}h`);
+    console.log(`Minutes since last update: ${diffMinutes.toFixed(1)}m`);
 
-    // Si han pasado más de 2.5 horas, registrar recordatorio en Firebase Realtime Database
-    if (diffHours >= 2.5) {
-      console.log('Sending reminder actions to Firebase Realtime Database...');
+    // Si han pasado 45 minutos o más, enviar recordatorio
+    if (diffMinutes >= 45) {
+      console.log('Sending reminder action (every 45 minutes)...');
+      
+      const randomMsg = REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
       
       const reminderAction = {
-        action: 'reminder',
+        action: 'notification',
         sender: 'Sistema Nosotros',
-        title: '¡Vuestro espacio os extraña! 💕',
-        message: '¿Qué tal si entráis a ver qué hay de nuevo? 😍',
+        title: randomMsg.title,
+        message: randomMsg.message,
         timestamp: Date.now()
       };
 
       const result = await pushFirebaseAction(reminderAction);
-      console.log('Reminder pushed successfully to Firebase:', result);
+      console.log('45-minute reminder pushed successfully to Firebase:', result);
     } else {
-      console.log('Recent activity detected. No reminder needed.');
+      console.log('Recent activity detected under 45 minutes. No reminder needed.');
     }
   } catch (error) {
     console.error('Error in main execution:', error);
